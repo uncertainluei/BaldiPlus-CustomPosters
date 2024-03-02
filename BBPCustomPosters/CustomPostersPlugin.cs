@@ -11,13 +11,10 @@ using BepInEx.Configuration;
 namespace LuisRandomness.BBPCustomPosters
 {
     [BepInPlugin("io.github.luisrandomness.bbp_custom_posters", "BB+ Custom Posters", ModVersion)]
-    [BepInDependency("mtm101.rulerp.bbplus.baldidevapi", BaldiDevApiVersion)]
+    [BepInDependency("mtm101.rulerp.bbplus.baldidevapi")]
     public class CustomPostersPlugin : BaseUnityPlugin
     {
-        public const string ModVersion = "2024.1.0.0";
-
-        // Works on 3.0.0.0, and MIGHT work past 3.1.0.0 but rather be safe than sorry
-        public const string BaldiDevApiVersion = "~3";
+        public const string ModVersion = "2024.1.0.1";
 
         private static List<CustomWeightedPoster> posters;
 
