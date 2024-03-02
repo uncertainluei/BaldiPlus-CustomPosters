@@ -23,8 +23,9 @@ namespace LuisRandomness.BBPCustomPosters
 
         public bool IncludeInLevel(string levelName)
         {
+            // Exclude IF weight = 0 as it won't appear anyway
             // Include IF either the whitelist is empty OR the level obeys the white/blacklist
-            return levelWhitelist.Length == 0 || levelWhitelist.Contains(levelName) != reverseWhitelist;
+            return weight > 0 && (levelWhitelist.Length == 0 || levelWhitelist.Contains(levelName) != reverseWhitelist);
         }
     }
 

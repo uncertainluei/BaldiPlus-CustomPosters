@@ -11,7 +11,7 @@ using BepInEx.Configuration;
 namespace LuisRandomness.BBPCustomPosters
 {
     [BepInPlugin("io.github.luisrandomness.bbp_custom_posters", "BB+ Custom Posters", ModVersion)]
-    [BepInDependency("mtm101.rulerp.bbplus.baldidevapi")]
+    [BepInDependency("mtm101.rulerp.bbplus.baldidevapi", BepInDependency.DependencyFlags.HardDependency)]
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModVersion = "2024.1.0.1";
