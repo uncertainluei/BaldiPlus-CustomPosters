@@ -6,14 +6,6 @@ A mod for [*Baldi's Basics Plus v0.4.1*](https://store.steampowered.com/app/1275
 
 Requires [*BepInEx v5.4.x*](https://github.com/BepInEx/BepInEx/tag/v5.4.22) and [*Baldi's Basics Plus Dev API v3.1.0.0*](https://gamebanana.com/mods/383711).
 
-### Screenshots
-*All the posters (sans the one in the last screenshot) seen here are not included with the normal download.*
-![Custom Multi-Poster in Classroom](https://i.imgur.com/gGWnWrJ.png)
-![Custom Poster in Library](https://i.imgur.com/1mu1d35.png)
-![Custom Poster in Clinic](https://i.imgur.com/261k0lO.png)
-![Custom Poster in Classroom](https://i.imgur.com/M0u4FBS.png)
-![Custom Multi-Poster in Hall](https://i.imgur.com/7CbzmRg.png)
-
 ### Features provided by the mod
 - Creation of single-wall posters by providing either **only** a **.PNG** image or also a **.JSON** definition file
 	- **Custom posters should be added in `[BB+ INSTALL PATH]/BALDI_Data/StreamingAssets/Modded/io.github.luisrandomness.bbp_custom_posters/Posters`, and definition files must have the extension `.png.json`.**
@@ -32,3 +24,11 @@ Requires [*BepInEx v5.4.x*](https://github.com/BepInEx/BepInEx/tag/v5.4.22) and 
 	- White/blacklist of posters added by either the base game or other mods
 - Poster Text Data support (although quite slim)
 - Ability to add custom chalkboards
+
+### Screenshots
+*All the posters (sans the one in the last screenshot) seen here are not included with the normal download.*
+![Custom Multi-Poster in Classroom](https://i.imgur.com/gGWnWrJ.png)
+![Custom Poster in Library](https://i.imgur.com/1mu1d35.png)
+![Custom Poster in Clinic](https://i.imgur.com/261k0lO.png)
+![Custom Poster in Classroom](https://i.imgur.com/M0u4FBS.png)
+![Custom Multi-Poster in Hall](https://i.imgur.com/7CbzmRg.png)
