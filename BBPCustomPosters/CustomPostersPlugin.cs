@@ -7,6 +7,9 @@ using UnityEngine;
 using MTM101BaldAPI;
 using MTM101BaldAPI.Registers;
 using BepInEx.Configuration;
+using System;
+using LuisRandomness.BBPCustomPosters;
+using BepInEx.Logging;
 
 namespace LuisRandomness.BBPCustomPosters
 {
@@ -14,35 +17,175 @@ namespace LuisRandomness.BBPCustomPosters
     [BepInDependency("mtm101.rulerp.bbplus.baldidevapi", BepInDependency.DependencyFlags.HardDependency)]
     public class CustomPostersPlugin : BaseUnityPlugin
     {
-        public const string ModVersion = "2024.1.0.1";
+        public const string ModVersion = "2024.1.1.0";
 
-        private static List<CustomWeightedPoster> posters;
+        internal static ManualLogSource Log;
+
+        // POSTER VARIABLES
+        private static List<string> additionalPosterPaths = new List<string>();
+        private CustomPosterSettings defaultSettings = new CustomPosterSettings();
+        private PosterTextData[] defaultTextData = new PosterTextData[0];
+
+        private static List<CustomWeightedPoster> posters = new List<CustomWeightedPoster>();
+        private static Dictionary<string, int> posterDiffs = new Dictionary<string, int>();
+
+        private static bool inPost = false;
 
         // CONFIGURATION
         internal static ConfigEntry<int> config_defaultWeight;
         internal static ConfigEntry<bool> config_adjustPosterChances;
         internal static ConfigEntry<float> config_posterChanceMultiplier;
 
-        //internal static ConfigEntry<string[]> config_foreignPosterBlacklist;
-        //internal static ConfigEntry<bool> config_invertForeignPosterBlacklist;
+        internal static ConfigEntry<string> config_foreignPosterBlacklist;
+
+        internal static string[] blacklistedPostersRaw;
+
+        internal static ConfigEntry<bool> config_invertForeignPosterBlacklist;
 
         internal static ConfigEntry<bool> config_logAllPosters;
 
 
         void Awake()
         {
+            Log = Logger;
+
             InitConfigValues();
+            LoadingEvents.RegisterOnAssetsLoaded(CreatePosters, true);
 
-            CustomPosterSettings defaultSettings = new CustomPosterSettings();
-            PosterTextData[] defaultTextData = new PosterTextData[0];
-            posters = new List<CustomWeightedPoster>();
+            GeneratorManagement.Register(this, GenerationModType.Addend, (string name, int floorid, LevelObject obj) =>
+            {
+                // If there aren't any posters in the map, don't add them
+                if (obj.posters.Length > 0)
+                {
+                    posterDiffs.Add(name, obj.posters.Length);
+                    List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
+                    foreach (CustomWeightedPoster poster2 in posters)
+                    {
+                        if (poster2.IncludeInLevel(name))
+                            currentPosters.Add(poster2);
+                    }
+                    obj.posters = currentPosters.ToArray();
+                    obj.MarkAsNeverUnload();
+                }
+            });
 
-            string path = Path.Combine(AssetLoader.GetModPath(this),"Posters");
+            // Remove posters
+            GeneratorManagement.Register(this, GenerationModType.Finalizer, (string name, int floorid, LevelObject obj) =>
+            {
+                if (config_adjustPosterChances.Value)
+                {
+                    List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
+                    foreach (WeightedPosterObject poster in currentPosters)
+                    {
+                        if (poster.IsBlacklisted())
+                            currentPosters.Remove(poster);
+                    }
+                    obj.posters = currentPosters.ToArray();
+                    float newPosterChance = obj.posterChance * obj.posters.Length / posterDiffs[name];
+                    obj.posterChance = Mathf.Lerp(obj.posterChance, newPosterChance, config_posterChanceMultiplier.Value);
+                }
 
+                if (!config_logAllPosters.Value) return;
+
+                Logger.LogInfo("[Level] \"" + name + "\", (Floor " + floorid + "):");
+                foreach (WeightedPosterObject poster in obj.posters)
+                {
+                    Logger.LogInfo(" - \"" + poster.selection.name + "\" (Weight: " + poster.weight + ")");
+                }
+                Logger.LogInfo("");
+            });
+        }
+        void InitConfigValues()
+        {
+            config_defaultWeight = Config.Bind(
+                "General",
+                "defaultPosterWeight",
+                50,
+                "Default poster weight if variable weight is not set.");
+            config_adjustPosterChances = Config.Bind(
+                "Poster Chances",
+                "adjustPosterChances",
+                true,
+                "Adjusts the chance of posters generating based on the quantity difference.");
+            config_posterChanceMultiplier = Config.Bind(
+                "Poster Chances",
+                "posterChanceMultiplier",
+                0.5f,
+                "Affects how much the poster chances are affected. Ideally tone it down if you have added 100+ posters!");
+
+            config_foreignPosterBlacklist = Config.Bind("Foreign Posters",
+                "blacklist",
+                "",
+                "(Names separated by commas)\nList of posters not added by the mod that should not be generated.\nThis works best for posters added by the base game, as other mods using generation management may add their own overrides first!");
+            config_invertForeignPosterBlacklist = Config.Bind("Foreign Posters",
+                "invertBlacklist",
+                false,
+                "If true, only posters not added by the mod in the blacklist are kept.");
+
+            blacklistedPostersRaw = config_foreignPosterBlacklist.Value.Split(new char[','], StringSplitOptions.RemoveEmptyEntries);
+
+            config_logAllPosters = Config.Bind(
+                "Debug",
+                "logAllPosters",
+                false,
+                "Logs all available posters in every randomly generated floor.");
+        }
+
+        void CreatePosters()
+        {
+            // Make it where if any mod tries to add posters after post asset load
+            inPost = true;
+
+            string path = Path.Combine(AssetLoader.GetModPath(this), "Posters");
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
-            string[] files = Directory.GetFiles(path);
+            GrabPostersFromDirectory(path, true);
+
+            foreach (string path2 in additionalPosterPaths)
+                GrabPostersFromDirectory(path2, false);
+
+            additionalPosterPaths.Clear();
+        }
+
+        public static void AddPostersFromDirectory(BaseUnityPlugin plugin, params string[] paths)
+        {
+            if (!plugin)
+                throw new MissingReferenceException("BepInEx Plugin not set!");
+
+            int length = paths.Length + 1;
+            string[] paths2 = new string[length];
+
+            paths2[0] = AssetLoader.GetModPath(plugin);
+            for (int i = 1; i < length; i++)
+                paths2[i] = paths[i - 1];
+
+            AddPostersFromDirectory(Path.Combine(paths2));
+        }
+
+        public static void AddPostersFromDirectory(string dir)
+        {
+            if (inPost)
+            {
+                Log.LogError("Could not add posters from \"" + dir + "\": Please call the method before assets are loaded, preferably in Awake() or in a asset preload loading event.");
+                return;
+            }
+
+            if (additionalPosterPaths.Contains(dir))
+                return;
+
+            additionalPosterPaths.Add(dir);
+        }
+
+        void GrabPostersFromDirectory(string dir, bool userGenerated)
+        {
+            if (!Directory.Exists(dir))
+            {
+                Logger.LogWarning("Folder \"" + dir + "\" does not exist. Make sure you spelled the path right!");
+                return;
+            }
+
+            string[] files = Directory.GetFiles(dir);
 
             Texture2D tex;
             PosterObject newPoster;
@@ -54,7 +197,7 @@ namespace LuisRandomness.BBPCustomPosters
                     continue;
 
                 tex = AssetLoader.TextureFromFile(file);
-                
+
                 if (!File.Exists(file + ".json"))
                     settings = defaultSettings; // Load the default settings to reduce memory usage
                 else
@@ -62,7 +205,7 @@ namespace LuisRandomness.BBPCustomPosters
                     settings = new CustomPosterSettings();
                     JsonUtility.FromJsonOverwrite(File.ReadAllText(file + ".json"), settings);
                 }
-                
+
                 if (tex.width % settings.posterLength > 0) // Image cannot be properly split into the length
                 {
                     Logger.LogError("Poster \"" + tex.name + "\" could not be properly split into a multi-poster!");
@@ -95,73 +238,8 @@ namespace LuisRandomness.BBPCustomPosters
                     }
                 }
 
-                posters.Add(new CustomWeightedPoster(newPoster, settings));
+                posters.Add(new CustomWeightedPoster(newPoster, settings, userGenerated));
             }
-
-            GeneratorManagement.Register(this, GenerationModType.Addend, (string name, int floorid, LevelObject obj) =>
-            {
-                // If there aren't any posters in the map, don't add them
-                if (obj.posters.Length > 0)
-                {
-                    int oldPosterCount = obj.posters.Length;
-                    List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
-                    foreach (WeightedPosterObject poster in currentPosters)
-                    {
-                        if (!(poster is CustomWeightedPoster) && poster.IsBlacklisted())
-                            currentPosters.Remove(poster);
-                    }
-                    foreach (CustomWeightedPoster poster2 in posters)
-                    {
-                        if (poster2.IncludeInLevel(name))
-                            currentPosters.Add(poster2);
-                    }
-                    obj.posters = currentPosters.ToArray();
-
-                    if (config_adjustPosterChances.Value)
-                    {
-                        float newPosterChance = obj.posterChance * obj.posters.Length / oldPosterCount;
-                        obj.posterChance = Mathf.Lerp(obj.posterChance, newPosterChance, config_posterChanceMultiplier.Value);
-                    }   
-
-                    obj.MarkAsNeverUnload();
-                }
-
-                if (!config_logAllPosters.Value) return;
-
-                Logger.LogInfo("[Level] \"" + name + "\", (Floor " + floorid + "):");
-                foreach (WeightedPosterObject poster in obj.posters)
-                {
-                    Logger.LogInfo(" - \"" + poster.selection.name + "\" (Weight: " + poster.weight + ")");
-                }
-                Logger.LogInfo("");
-            });
-        }
-        void InitConfigValues()
-        {
-            config_defaultWeight = Config.Bind(
-                "General",
-                "defaultPosterWeight",
-                50,
-                "Default poster weight if variable weight is not set.");
-            config_adjustPosterChances = Config.Bind(
-                "Poster Chances",
-                "adjustPosterChances",
-                true,
-                "Adjusts the chance of posters generating based on the quantity difference.");
-            config_posterChanceMultiplier = Config.Bind(
-                "Poster Chances",
-                "posterChanceMultiplier",
-                0.5f,
-                "Affects how much the poster chances are affected. Ideally tone it down if you have added 100+ posters!");
-
-            //config_foreignPosterBlacklist = Config.Bind("Foreign Posters", "blacklist", new string[0], "List of posters not added by the mod that should not be generated.\nThis works best for posters added by the base game, as other mods using generation management may add their own overrides first!");
-            //config_invertForeignPosterBlacklist = Config.Bind("Foreign Posters", "invertBlacklist", false, "If true, only posters not added by the mod in the blacklist are kept.");
-
-            config_logAllPosters = Config.Bind(
-                "Debug",
-                "logAllPosters",
-                false,
-                "Logs all available posters in every randomly generated floor.");
         }
     }
 }

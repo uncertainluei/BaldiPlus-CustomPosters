@@ -9,8 +9,10 @@ namespace LuisRandomness.BBPCustomPosters
 {
     public class CustomWeightedPoster : WeightedPosterObject
     {
-        public CustomWeightedPoster(PosterObject poster, CustomPosterSettings settings)
+        public CustomWeightedPoster(PosterObject poster, CustomPosterSettings settings, bool userGenerated = false)
         {
+            this.userGenerated = userGenerated;
+
             selection = poster;
             weight = settings.posterWeight;
 
@@ -20,6 +22,8 @@ namespace LuisRandomness.BBPCustomPosters
 
         private readonly string[] levelWhitelist;
         private readonly bool reverseWhitelist;
+
+        public readonly bool userGenerated;
 
         public bool IncludeInLevel(string levelName)
         {
@@ -33,9 +37,10 @@ namespace LuisRandomness.BBPCustomPosters
     {
         public static bool IsBlacklisted(this WeightedPosterObject poster)
         {
-            //return CustomPostersPlugin.config_foreignPosterBlacklist.Value.Contains(poster.selection.name)
-            //    == CustomPostersPlugin.config_invertForeignPosterBlacklist.Value;
-            return false;
+            if (poster is CustomWeightedPoster && ((CustomWeightedPoster)poster).userGenerated) return false;
+
+            return CustomPostersPlugin.blacklistedPostersRaw.Contains(poster.selection.name)
+                == CustomPostersPlugin.config_invertForeignPosterBlacklist.Value;
         }
     }
 
