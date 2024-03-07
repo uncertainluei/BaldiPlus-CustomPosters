@@ -1,8 +1,6 @@
-﻿using BepInEx.Configuration;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
+
 using UnityEngine;
 
 namespace LuisRandomness.BBPCustomPosters
@@ -37,10 +35,11 @@ namespace LuisRandomness.BBPCustomPosters
     {
         public static bool IsBlacklisted(this WeightedPosterObject poster)
         {
+            // Exclude user generated posters
             if (poster is CustomWeightedPoster && ((CustomWeightedPoster)poster).userGenerated) return false;
 
-            return CustomPostersPlugin.blacklistedPostersRaw.Contains(poster.selection.name)
-                == CustomPostersPlugin.config_invertForeignPosterBlacklist.Value;
+            return CustomPostersPlugin.blacklistedPostersRaw.Contains(poster.selection.name.Trim())
+                != CustomPostersPlugin.config_invertForeignPosterBlacklist.Value;
         }
     }
 
@@ -59,6 +58,7 @@ namespace LuisRandomness.BBPCustomPosters
         // Levels are declared via string values.
         // If empty, it will spawn in any level.
         public string[] levelWhitelist = new string[0];
+
         // If true, the level whitelist will become a blacklist, and the
         // poster will be excluded from the floors declared in the list.
         public bool reverseWhitelist = false;

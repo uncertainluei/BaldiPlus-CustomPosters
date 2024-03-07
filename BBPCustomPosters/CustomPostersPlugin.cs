@@ -1,14 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using MTM101BaldAPI.AssetTools;
-using BepInEx;
-using HarmonyLib;
+
 using UnityEngine;
+
 using MTM101BaldAPI;
+using MTM101BaldAPI.AssetTools;
 using MTM101BaldAPI.Registers;
+
+using BepInEx;
 using BepInEx.Configuration;
-using System;
-using LuisRandomness.BBPCustomPosters;
 using BepInEx.Logging;
 
 namespace LuisRandomness.BBPCustomPosters
@@ -17,19 +18,19 @@ namespace LuisRandomness.BBPCustomPosters
     [BepInDependency("mtm101.rulerp.bbplus.baldidevapi", BepInDependency.DependencyFlags.HardDependency)]
     public class CustomPostersPlugin : BaseUnityPlugin
     {
-        public const string ModVersion = "2024.1.1.0";
+        public const string ModVersion = "2024.2.0.0";
 
         internal static ManualLogSource Log;
 
         // POSTER VARIABLES
         private static List<string> additionalPosterPaths = new List<string>();
-        private CustomPosterSettings defaultSettings = new CustomPosterSettings();
+        private CustomPosterSettings defaultSettings;
         private PosterTextData[] defaultTextData = new PosterTextData[0];
 
         private static List<CustomWeightedPoster> posters = new List<CustomWeightedPoster>();
         private static Dictionary<string, int> posterDiffs = new Dictionary<string, int>();
 
-        private static bool inPost = false;
+        private static bool loaded = false;
 
         // CONFIGURATION
         internal static ConfigEntry<int> config_defaultWeight;
@@ -48,9 +49,12 @@ namespace LuisRandomness.BBPCustomPosters
         void Awake()
         {
             Log = Logger;
-
             InitConfigValues();
-            LoadingEvents.RegisterOnAssetsLoaded(CreatePosters, true);
+
+            // CustomPosterSettings grabs a config value, so that's built after the config is initialised
+            defaultSettings = new CustomPosterSettings();
+
+            LoadingEvents.RegisterOnAssetsLoaded(CreatePosters, false);
 
             GeneratorManagement.Register(this, GenerationModType.Addend, (string name, int floorid, LevelObject obj) =>
             {
@@ -75,13 +79,17 @@ namespace LuisRandomness.BBPCustomPosters
                 if (config_adjustPosterChances.Value)
                 {
                     List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
-                    foreach (WeightedPosterObject poster in currentPosters)
+                    for (int i = 0; i < currentPosters.Count; i++)
                     {
-                        if (poster.IsBlacklisted())
-                            currentPosters.Remove(poster);
+                        if (currentPosters[i].IsBlacklisted())
+                        {
+                            currentPosters.RemoveAt(i);
+                            i--;
+                        }
                     }
+
                     obj.posters = currentPosters.ToArray();
-                    float newPosterChance = obj.posterChance * obj.posters.Length / posterDiffs[name];
+                    float newPosterChance = obj.posterChance * currentPosters.Count / posterDiffs[name];
                     obj.posterChance = Mathf.Lerp(obj.posterChance, newPosterChance, config_posterChanceMultiplier.Value);
                 }
 
@@ -116,25 +124,29 @@ namespace LuisRandomness.BBPCustomPosters
             config_foreignPosterBlacklist = Config.Bind("Foreign Posters",
                 "blacklist",
                 "",
-                "(Names separated by commas)\nList of posters not added by the mod that should not be generated.\nThis works best for posters added by the base game, as other mods using generation management may add their own overrides first!");
+                "(Names separated by commas) List of non-user-generated posters that should not be generated.");
             config_invertForeignPosterBlacklist = Config.Bind("Foreign Posters",
                 "invertBlacklist",
                 false,
-                "If true, only posters not added by the mod in the blacklist are kept.");
+                "If true, the blacklist above becomes a whitelist and only non-user-generated posters listed above can spawn.");
 
             blacklistedPostersRaw = config_foreignPosterBlacklist.Value.Split(new char[','], StringSplitOptions.RemoveEmptyEntries);
+
+            // Ensure all split values are trimmed to remove leading spaces
+            for (int i = 0; i < blacklistedPostersRaw.Length; i++)
+                blacklistedPostersRaw[i] = blacklistedPostersRaw[i].Trim();
 
             config_logAllPosters = Config.Bind(
                 "Debug",
                 "logAllPosters",
                 false,
-                "Logs all available posters in every randomly generated floor.");
+                "Logs all available posters in every random floor setting.");
         }
 
         void CreatePosters()
         {
             // Make it where if any mod tries to add posters after post asset load
-            inPost = true;
+            loaded = true;
 
             string path = Path.Combine(AssetLoader.GetModPath(this), "Posters");
             if (!Directory.Exists(path))
@@ -165,9 +177,9 @@ namespace LuisRandomness.BBPCustomPosters
 
         public static void AddPostersFromDirectory(string dir)
         {
-            if (inPost)
+            if (loaded)
             {
-                Log.LogError("Could not add posters from \"" + dir + "\": Please call the method before assets are loaded, preferably in Awake() or in a asset preload loading event.");
+                Log.LogError("Could not add posters from \"" + dir + "\": Please call the method before any OnAllAssetsLoaded event, preferably in Awake().");
                 return;
             }
 
