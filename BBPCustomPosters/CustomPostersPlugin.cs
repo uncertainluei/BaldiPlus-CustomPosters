@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 
 using UnityEngine;
+using TMPro;
 
 using MTM101BaldAPI;
 using MTM101BaldAPI.AssetTools;
@@ -12,12 +13,18 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 
+using HarmonyLib;
+
+// Curse UnityEngine.JsonUtility, all my homies use Json.Net
+using Newtonsoft.Json;
+
 namespace LuisRandomness.BBPCustomPosters
 {
-    [BepInPlugin("io.github.luisrandomness.bbp_custom_posters", "BB+ Custom Posters", ModVersion)]
+    [BepInPlugin(ModGuid, "BB+ Custom Posters", ModVersion)]
     [BepInDependency("mtm101.rulerp.bbplus.baldidevapi", BepInDependency.DependencyFlags.HardDependency)]
     public class CustomPostersPlugin : BaseUnityPlugin
     {
+        public const string ModGuid = "io.github.luisrandomness.bbp_custom_posters";
         public const string ModVersion = "2024.2.0.0";
 
         internal static ManualLogSource Log;
@@ -25,12 +32,19 @@ namespace LuisRandomness.BBPCustomPosters
         // POSTER VARIABLES
         private static List<string> additionalPosterPaths = new List<string>();
         private CustomPosterSettings defaultSettings;
-        private PosterTextData[] defaultTextData = new PosterTextData[0];
+        private CustomPosterTextData[] defaultTextData = new CustomPosterTextData[0];
 
         private static List<CustomWeightedPoster> posters = new List<CustomWeightedPoster>();
         private static Dictionary<string, int> posterDiffs = new Dictionary<string, int>();
-
+        
+        private string lastFloorName;
+        private int lastFloorId;
+        private bool lastFloorFinalized;
+        
         private static bool loaded = false;
+
+        internal static Dictionary<string, TMP_FontAsset> fontAssets = new Dictionary<string, TMP_FontAsset>();
+
 
         // CONFIGURATION
         internal static ConfigEntry<int> config_defaultWeight;
@@ -44,6 +58,7 @@ namespace LuisRandomness.BBPCustomPosters
         internal static ConfigEntry<bool> config_invertForeignPosterBlacklist;
 
         internal static ConfigEntry<bool> config_logAllPosters;
+        internal static ConfigEntry<bool> config_createExample;
 
 
         void Awake()
@@ -53,55 +68,15 @@ namespace LuisRandomness.BBPCustomPosters
 
             // CustomPosterSettings grabs a config value, so that's built after the config is initialised
             defaultSettings = new CustomPosterSettings();
-
+            
             LoadingEvents.RegisterOnAssetsLoaded(CreatePosters, false);
 
-            GeneratorManagement.Register(this, GenerationModType.Addend, (string name, int floorid, LevelObject obj) =>
-            {
-                // If there aren't any posters in the map, don't add them
-                if (obj.posters.Length > 0)
-                {
-                    posterDiffs.Add(name, obj.posters.Length);
-                    List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
-                    foreach (CustomWeightedPoster poster2 in posters)
-                    {
-                        if (poster2.IncludeInLevel(name))
-                            currentPosters.Add(poster2);
-                    }
-                    obj.posters = currentPosters.ToArray();
-                    obj.MarkAsNeverUnload();
-                }
-            });
+            GeneratorManagement.Register(this, GenerationModType.Addend, OnGeneratorAddend);
 
             // Remove posters
-            GeneratorManagement.Register(this, GenerationModType.Finalizer, (string name, int floorid, LevelObject obj) =>
-            {
-                if (config_adjustPosterChances.Value)
-                {
-                    List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
-                    for (int i = 0; i < currentPosters.Count; i++)
-                    {
-                        if (currentPosters[i].IsBlacklisted())
-                        {
-                            currentPosters.RemoveAt(i);
-                            i--;
-                        }
-                    }
+            GeneratorManagement.Register(this, GenerationModType.Finalizer, OnGeneratorPost);
 
-                    obj.posters = currentPosters.ToArray();
-                    float newPosterChance = obj.posterChance * currentPosters.Count / posterDiffs[name];
-                    obj.posterChance = Mathf.Lerp(obj.posterChance, newPosterChance, config_posterChanceMultiplier.Value);
-                }
-
-                if (!config_logAllPosters.Value) return;
-
-                Logger.LogInfo("[Level] \"" + name + "\", (Floor " + floorid + "):");
-                foreach (WeightedPosterObject poster in obj.posters)
-                {
-                    Logger.LogInfo(" - \"" + poster.selection.name + "\" (Weight: " + poster.weight + ")");
-                }
-                Logger.LogInfo("");
-            });
+            new Harmony(ModGuid).PatchAllConditionals();
         }
         void InitConfigValues()
         {
@@ -130,7 +105,7 @@ namespace LuisRandomness.BBPCustomPosters
                 false,
                 "If true, the blacklist above becomes a whitelist and only non-user-generated posters listed above can spawn.");
 
-            blacklistedPostersRaw = config_foreignPosterBlacklist.Value.Split(new char[','], StringSplitOptions.RemoveEmptyEntries);
+            blacklistedPostersRaw = config_foreignPosterBlacklist.Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Ensure all split values are trimmed to remove leading spaces
             for (int i = 0; i < blacklistedPostersRaw.Length; i++)
@@ -141,12 +116,41 @@ namespace LuisRandomness.BBPCustomPosters
                 "logAllPosters",
                 false,
                 "Logs all available posters in every random floor setting.");
+
+            config_createExample = Config.Bind(
+                "Debug",
+                "createExample",
+                false,
+                "Automatically creates an example .JSON poster definition file.");
+
+            if (config_createExample.Value)
+            {
+                // Create example
+                PosterTextSettings settings = new PosterTextSettings();
+                CustomPosterSettings poster = new CustomPosterSettings() { textData = new PosterTextSettings[] { settings } };
+
+                string path = AssetLoader.GetModPath(this);
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+
+                File.WriteAllText(Path.Combine(path, "ExampleDef.png.json"), JsonConvert.SerializeObject(poster, Formatting.Indented));
+            }
         }
 
         void CreatePosters()
         {
             // Make it where if any mod tries to add posters after post asset load
             loaded = true;
+
+            // Grabs the pre-existing fonts to parse font name strings in CustomPosterTextData objects
+            TMP_FontAsset[] fonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+            foreach (TMP_FontAsset font in fonts)
+            {
+                if (!fontAssets.ContainsKey(font.name))
+                {
+                    fontAssets.Add(font.name, font);
+                }
+            }
 
             string path = Path.Combine(AssetLoader.GetModPath(this), "Posters");
             if (!Directory.Exists(path))
@@ -160,17 +164,17 @@ namespace LuisRandomness.BBPCustomPosters
             additionalPosterPaths.Clear();
         }
 
-        public static void AddPostersFromDirectory(BaseUnityPlugin plugin, params string[] paths)
+        public static void AddPostersFromDirectory(BaseUnityPlugin plugin, params string[] args)
         {
             if (!plugin)
                 throw new MissingReferenceException("BepInEx Plugin not set!");
 
-            int length = paths.Length + 1;
+            int length = args.Length + 1;
             string[] paths2 = new string[length];
 
             paths2[0] = AssetLoader.GetModPath(plugin);
             for (int i = 1; i < length; i++)
-                paths2[i] = paths[i - 1];
+                paths2[i] = args[i - 1];
 
             AddPostersFromDirectory(Path.Combine(paths2));
         }
@@ -202,6 +206,9 @@ namespace LuisRandomness.BBPCustomPosters
             Texture2D tex;
             PosterObject newPoster;
             CustomPosterSettings settings;
+            
+            bool hasTextData;
+            CustomPosterTextData[] customTextData;
 
             foreach (string file in files)
             {
@@ -215,7 +222,7 @@ namespace LuisRandomness.BBPCustomPosters
                 else
                 {
                     settings = new CustomPosterSettings();
-                    JsonUtility.FromJsonOverwrite(File.ReadAllText(file + ".json"), settings);
+                    JsonConvert.PopulateObject(File.ReadAllText(file + ".json"), settings);
                 }
 
                 if (tex.width % settings.posterLength > 0) // Image cannot be properly split into the length
@@ -225,7 +232,11 @@ namespace LuisRandomness.BBPCustomPosters
                     continue;
                 }
 
-                newPoster = ObjectCreators.CreatePosterObject(tex, defaultTextData);
+                hasTextData = settings.textData?.Length > 0;
+                customTextData = hasTextData ? settings.textData.Build() : defaultTextData;
+                Debug.Log(customTextData.Length);
+
+                newPoster = ObjectCreators.CreatePosterObject(tex, customTextData.GetTextsForSegment());
                 newPoster.name = tex.name;
 
                 if (settings.posterLength > 1)
@@ -245,13 +256,93 @@ namespace LuisRandomness.BBPCustomPosters
                         Color[] pixels = tex.GetPixels(x, 0, splitWidth, height);
                         split.SetPixels(pixels);
                         split.Apply();
-                        newPoster.multiPosterArray[i] = ObjectCreators.CreatePosterObject(split, defaultTextData);
+
+                        if (i > 0)
+                        {
+                            newPoster.multiPosterArray[i] = ObjectCreators.CreatePosterObject(split, customTextData.GetTextsForSegment(i));
+                            newPoster.multiPosterArray[i].name = split.name;
+                        }
+                        else
+                        {
+                            newPoster.multiPosterArray[0] = newPoster;
+                            newPoster.baseTexture = split;
+                        }
                         i++;
                     }
                 }
 
                 posters.Add(new CustomWeightedPoster(newPoster, settings, userGenerated));
             }
+        }
+
+        void OnGeneratorAddend(string name, int id, LevelObject obj)
+        {
+            if (name == lastFloorName && id == lastFloorId) return;
+
+            lastFloorName = name;
+            lastFloorId = id;
+            lastFloorFinalized = false;
+
+            // Infinite Floors support
+            bool endless = name == "INF";
+            string fixedName = endless ? (name + id) : name;
+
+            // If there aren't any posters in the map, don't add them
+            if (obj.posters.Length > 0)
+            {
+                posterDiffs.Add(fixedName, obj.posters.Length);
+                List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
+                foreach (CustomWeightedPoster poster2 in posters)
+                {
+                    if (poster2.IncludeInLevel(fixedName) || (endless && poster2.IncludeInLevel(name)))
+                    {
+                        if (!currentPosters.Contains(poster2))
+                            currentPosters.Add(poster2);
+                    }
+                    else
+                        if (currentPosters.Contains(poster2))
+                            currentPosters.Remove(poster2);
+                }
+                obj.posters = currentPosters.ToArray();
+                obj.MarkAsNeverUnload();
+            }
+        }
+
+        void OnGeneratorPost(string name, int id, LevelObject obj)
+        {
+            if (lastFloorFinalized) return;
+            lastFloorFinalized = true;
+
+            string fixedName = (name == "INF") ? (name + id) : name; // Infinite Floors support
+
+            // Remove blacklisted posters from the generator
+            List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
+            for (int i = 0; i < currentPosters.Count; i++)
+            {
+                if (currentPosters[i].IsBlacklisted())
+                {
+                    currentPosters.RemoveAt(i);
+                    i--;
+                }
+            }
+            obj.posters = currentPosters.ToArray();
+
+            if (config_adjustPosterChances.Value && posterDiffs.TryGetValue(fixedName, out int originalCount))
+            {
+                posterDiffs.Remove(fixedName);
+                float newPosterChance = obj.posterChance * currentPosters.Count / originalCount;
+                obj.posterChance = Mathf.Lerp(obj.posterChance, newPosterChance, config_posterChanceMultiplier.Value);
+            }
+
+            if (!config_logAllPosters.Value) return;
+
+            Logger.LogInfo("Floor \"" + name + "\", ID " + id);
+            Logger.LogInfo("(Reference name \"" + fixedName + "\"):");
+            foreach (WeightedPosterObject poster in obj.posters)
+            {
+                Logger.LogInfo(" - \"" + poster.selection.name + "\" (Weight: " + poster.weight + ")");
+            }
+            Logger.LogInfo("");
         }
     }
 }
