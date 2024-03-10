@@ -234,7 +234,6 @@ namespace LuisRandomness.BBPCustomPosters
 
                 hasTextData = settings.textData?.Length > 0;
                 customTextData = hasTextData ? settings.textData.Build() : defaultTextData;
-                Debug.Log(customTextData.Length);
 
                 newPoster = ObjectCreators.CreatePosterObject(tex, customTextData.GetTextsForSegment());
                 newPoster.name = tex.name;
