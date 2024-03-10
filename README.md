@@ -11,7 +11,7 @@ Json.NET is bunded with the download, and is [licensed under MIT](https://github
 ### Features provided by the mod
 - Creation of single-wall posters by providing either **only** a **.PNG** image or also a **.JSON** definition file
 	- **Custom posters should be added in `[BB+ INSTALL PATH]/BALDI_Data/StreamingAssets/Modded/io.github.luisrandomness.bbp_custom_posters/Posters`, and definition files must have the extension `.png.json`.**
-	- **Other mods can depend on this and have their own poster paths read using the `CustomPostersPlugin.AddPostersFromDirectory` helper method.
+	- **Other mods can depend on this and have their own poster paths read using the `CustomPostersPlugin.AddPostersFromDirectory` helper method.**
 - Setting custom properties to any created poster, such as:
 	- The poster's *'weight'* probability in the generator
 	- The width of the poster (allowing for *'multi-posters'*)
