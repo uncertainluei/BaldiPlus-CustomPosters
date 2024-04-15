@@ -1,10 +1,10 @@
 # BB+ Custom Posters Mod
-![Version](https://img.shields.io/badge/version-2024.2.0.0-purple) ![License](https://img.shields.io/badge/license-MIT-blue?link=https://github.com/LuisRandomness/BBP_CustomPostersMod/blob/main/LICENSE)
-![BB+ version](https://img.shields.io/badge/bb+-0.4.1-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.22-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.22) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-3.4.0.0-69C12E?color=red&link=https://gamebanana.com/mods/383711)
+![Version](https://img.shields.io/badge/version-2024.2.0.0-purple) ![License](https://img.shields.io/badge/license-MIT-blue?link=https://github.com/LuisRandomness/BaldiPlus-CustomPosters/blob/main/LICENSE)
+![BB+ version](https://img.shields.io/badge/bb+-0.4.2-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.22-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.22) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-3.5.0.0-69C12E?color=red&link=https://gamebanana.com/mods/383711)
  
-A mod for [*Baldi's Basics Plus v0.4.1*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of custom wall posters by using user-provided images.
+A mod for [*Baldi's Basics Plus v0.4.2*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of custom wall posters by using user-provided images.
 
-Requires [*BepInEx v5.4.x*](https://github.com/BepInEx/BepInEx/tag/v5.4.22) and [*Baldi's Basics Plus Dev API v3.4.0.0*](https://gamebanana.com/mods/383711).
+Requires [*BepInEx v5.4.x*](https://github.com/BepInEx/BepInEx/tag/v5.4.22) and [*Baldi's Basics Plus Dev API v3.5.0.0*](https://gamebanana.com/mods/383711).
 
 Json.NET is bunded with the download, and is [licensed under MIT](https://github.com/JamesNK/Newtonsoft.Json?tab=MIT-1-ov-file#MIT-1-ov-file).
 
