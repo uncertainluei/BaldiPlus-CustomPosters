@@ -20,7 +20,6 @@ Json.NET is bunded with the download, and is [licensed under MIT](https://github
 	- What room categories can it specifically spawn in, and whether it can spawn as part of the level's global poster pool or not
 	- **Examples can be seen in the repository's `Examples` folder.**
 - The following configuration options, **which can be accessed from `[BB+ INSTALL PATH]/BepInEx/config/io.github.luisrandomness.bbp_custom_posters.cfg`**:
-	- Toggle to change poster probabilities according to the poster amount, and a percentage value option on how large the change is
 	- Default weight of created posters if not specifically set
 	- White/blacklist of posters added by either the base game or other mods
 	- Debug option to log (**almost**) all posters in the floor to the console, useful for balancing created poster weights
