@@ -30,7 +30,7 @@ namespace LuisRandomness.BBPCustomPosters
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.luisrandomness.bbp_custom_posters";
-        public const string ModVersion = "2024.3.0.0";
+        public const string ModVersion = "2024.3.0.1";
 
         internal static ManualLogSource Log;
 
@@ -199,7 +199,9 @@ namespace LuisRandomness.BBPCustomPosters
 
             PosterPack newPack;
 
-            string[] packs = Directory.GetFileSystemEntries(Path.Combine(AssetLoader.GetModPath(this), "Packs"));
+            string packsDir = Path.Combine(AssetLoader.GetModPath(this), "Packs");
+            string[] packs = Directory.Exists(packsDir) ? Directory.GetFileSystemEntries(packsDir) : new string[0];
+
             int total = posterPackBlueprints.Count + packs.Length;
             int idx = 1;
 
