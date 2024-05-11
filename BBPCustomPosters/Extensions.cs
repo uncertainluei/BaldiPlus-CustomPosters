@@ -60,6 +60,14 @@ namespace LuisRandomness.BBPCustomPosters
                 != CustomPostersPlugin.config_invertForeignPosterBlacklist.Value;
         }
 
+        public static string GetSource(this WeightedPosterObject poster)
+        {
+            if (poster is WeightedCustomPoster)
+                return ((WeightedCustomPoster)poster).customPoster.pack.packName;
+
+            return "Vanilla/Unknown";
+        }
+
         private static CustomPosterTextData[] blankData = new CustomPosterTextData[0];
 
         public static CustomPosterTextData[] Build(this PosterTextSettings[] customData)

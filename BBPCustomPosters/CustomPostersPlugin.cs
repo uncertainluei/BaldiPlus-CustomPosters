@@ -72,7 +72,7 @@ namespace LuisRandomness.BBPCustomPosters
             // Add personal pack
             posterPackBlueprints.Add(new PosterPackBlueprint(
                 Info, PosterPackType.Personal, "Personal",
-                Path.Combine(AssetLoader.GetModPath(this), "Packs"),
+                Path.Combine(AssetLoader.GetModPath(this), "Posters"),
                 true, PosterPackMetadata.personalMeta));
 
             // Before generator management events
@@ -252,6 +252,11 @@ namespace LuisRandomness.BBPCustomPosters
 
             activePosterPacks.Clear();
             activePosterPacks.AddRange(posterPacks.Values);
+
+            foreach (PosterPack pack in activePosterPacks)
+            {
+                Debug.Log(pack.globalPosters.Count);
+            }
             yield break;
         }
 
@@ -306,13 +311,13 @@ namespace LuisRandomness.BBPCustomPosters
 
             //if (!config_logAllPosters.Value) return;
 
-            //Logger.LogInfo("Floor \"" + name + "\", ID " + id);
-            //Logger.LogInfo("(Reference name \"" + fixedName + "\"):");
-            //foreach (WeightedPosterObject poster in obj.posters)
-            //{
-            //    Logger.LogInfo(" - \"" + poster.selection.name + "\" (Weight: " + poster.weight + ")");
-            //}
-            //Logger.LogInfo("");
+            Logger.LogInfo($"Floor \"{name}\", ID {id}");
+            Logger.LogInfo($"(Reference name \"{fixedName}\"):");
+            foreach (WeightedPosterObject poster in obj.posters)
+            {
+                Logger.LogInfo($" - \"{poster.selection.name}\" ({poster.GetSource()}, Weight: {poster.weight})");
+            }
+            Logger.LogInfo("");
         }
 
         public static void AddOptionalPackFromMod(BaseUnityPlugin plugin, string name, params string[] args)
@@ -355,14 +360,14 @@ namespace LuisRandomness.BBPCustomPosters
             AddBuiltInPackFromDirectory(plugin, Path.Combine(paths2));
         }
 
-        public static void AddBuiltInPackFromDirectory(BaseUnityPlugin plugin, string path)
+        public static void AddBuiltInPackFromDirectory(BaseUnityPlugin plugin, string path, int defaultWeight = 0)
         {
             if (!plugin)
                 throw new MissingReferenceException("BepInEx Plugin not set!");
             if (!loaded)
                 throw new Exception($"Could not add posters from {plugin.Info.Metadata.Name}, path \"{path}\"! Please execute this before the \"Mod Asset Pre-Load\" loading event!");
 
-            posterPackBlueprints.Add(new PosterPackBlueprint(plugin.Info, PosterPackType.Mod , $"{plugin.Info.Metadata.Name} (Built-in)", path));
+            posterPackBlueprints.Add(new PosterPackBlueprint(plugin.Info, path, defaultWeight));
         }
     }
 

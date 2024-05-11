@@ -219,6 +219,20 @@ namespace LuisRandomness.BBPCustomPosters
             this.meta = meta;
         }
 
+        public PosterPackBlueprint(PluginInfo pluginInfo, string path, int defaultWeight)
+        {
+            this.pluginInfo = pluginInfo;
+            this.type = PosterPackType.Mod;
+            this.name = $"{pluginInfo.Metadata.Name} (Built-in)";
+            this.path = path;
+            this.autoCreateDir = false;
+            this.meta = new PosterPackMetadata()
+            {
+                description = "Built-in mod poster pack",
+                defaultWeight = defaultWeight
+            };
+        }
+
         public PosterPackType type;
         public PluginInfo pluginInfo;
 
@@ -235,7 +249,7 @@ namespace LuisRandomness.BBPCustomPosters
         [JsonIgnore] public static readonly PosterPackMetadata personalMeta = new PosterPackMetadata()
         {
             credits = "Player",
-            description = "Personal poster pack, ideal for debugging purposes",
+            description = "Personal poster pack, ideal for quick prototyping",
             defaultWeight = 0
         };
 
