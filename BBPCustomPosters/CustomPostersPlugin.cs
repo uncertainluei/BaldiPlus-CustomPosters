@@ -60,7 +60,7 @@ namespace LuisRandomness.BBPCustomPosters
         internal static ConfigEntry<bool> config_invertForeignPosterBlacklist;
 
         internal static ConfigEntry<bool> config_globalPostersOnly;
-        //internal static ConfigEntry<bool> config_logAllPosters;
+        internal static ConfigEntry<bool> config_logAllPosters;
 
         void Awake()
         {
@@ -113,11 +113,11 @@ namespace LuisRandomness.BBPCustomPosters
             for (int i = 0; i < blacklistedPostersRaw.Length; i++)
                 blacklistedPostersRaw[i] = blacklistedPostersRaw[i].Trim();
 
-            //config_logAllPosters = Config.Bind(
-            //    "Debug",
-            //    "LogAllPosters",
-            //    false,
-            //    "Logs all available posters in every random floor setting.");
+            config_logAllPosters = Config.Bind(
+                "Debug",
+                "LogAllPosters",
+                false,
+                "Logs all available posters in every random floor setting.");
         }
 
         void InitDefaultReadChecks()
@@ -309,14 +309,13 @@ namespace LuisRandomness.BBPCustomPosters
 
             //TODO: Rework logallposters
 
-            //if (!config_logAllPosters.Value) return;
+            if (!config_logAllPosters.Value) return;
 
             Logger.LogInfo($"Floor \"{name}\", ID {id}");
             Logger.LogInfo($"(Reference name \"{fixedName}\"):");
             foreach (WeightedPosterObject poster in obj.posters)
-            {
                 Logger.LogInfo($" - \"{poster.selection.name}\" ({poster.GetSource()}, Weight: {poster.weight})");
-            }
+
             Logger.LogInfo("");
         }
 

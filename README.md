@@ -32,7 +32,7 @@ Json.NET is bunded with the download, and is [licensed under MIT](https://github
 - Ability to add custom chalkboards
 - Documentation on how to use the mod
 - ~~Support for possible "poster packs" (.zip archives)~~
-- - A menu to toggle poster packs
+  - A menu to toggle poster packs
 
 ### Screenshots
 *Some posters (excluding the ones in the first and last screenshots) seen here are not included with the normal download.*
