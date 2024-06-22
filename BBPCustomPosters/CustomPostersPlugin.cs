@@ -340,7 +340,7 @@ namespace LuisRandomness.BBPCustomPosters
         {
             if (!plugin)
                 throw new MissingReferenceException("BepInEx Plugin not set!");
-            if (!loaded)
+            if (loaded)
                 throw new Exception($"Could not add posters from {plugin.Info.Metadata.Name}, path \"{path}\"! Please execute this before the \"Mod Asset Pre-Load\" loading event!");
 
             posterPackBlueprints.Add(new PosterPackBlueprint(plugin.Info, PosterPackType.Mod, $"{name} ({plugin.Info.Metadata.Name})", path));
@@ -365,7 +365,7 @@ namespace LuisRandomness.BBPCustomPosters
         {
             if (!plugin)
                 throw new MissingReferenceException("BepInEx Plugin not set!");
-            if (!loaded)
+            if (loaded)
                 throw new Exception($"Could not add posters from {plugin.Info.Metadata.Name}, path \"{path}\"! Please execute this before the \"Mod Asset Pre-Load\" loading event!");
 
             posterPackBlueprints.Add(new PosterPackBlueprint(plugin.Info, path, defaultWeight));
