@@ -27,7 +27,7 @@ Json.NET is bunded with the download, and is [licensed under MIT](https://github
 
 **Planned features for future versions:**
 - Better configuration system that accepts arrays (maybe)
-- Documentation on how to use the mod (**(IMPORTANT!!)**)
+- Documentation on how to use the mod **(IMPORTANT!!)**
 - ~~Support for possible "poster packs" (.zip archives)~~
   - A menu to toggle poster packs
 
