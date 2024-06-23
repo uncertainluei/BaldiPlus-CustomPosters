@@ -1,0 +1,5 @@
+{
+    "posterWeight": 80,
+	"spawnMode": "Chalkboard",
+	"targetRooms": ["Class"]
+}

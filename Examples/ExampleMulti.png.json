@@ -1,6 +1,5 @@
 {
     "posterWeight": 50,
-    "posterLength": 3,
     "levelWhitelist": ["F1,F2"],
     "reverseWhitelist": false
 }

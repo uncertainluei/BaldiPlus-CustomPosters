@@ -22,6 +22,7 @@ using MTM101BaldAPI.Reflection;
 using System.Linq;
 using LuisRandomness.BBPCustomPosters.Packs;
 using System.IO.Compression;
+using Newtonsoft.Json.Converters;
 
 namespace LuisRandomness.BBPCustomPosters
 {
@@ -30,7 +31,7 @@ namespace LuisRandomness.BBPCustomPosters
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.luisrandomness.bbp_custom_posters";
-        public const string ModVersion = "2024.3.0.1";
+        public const string ModVersion = "2024.3.1.0";
 
         internal static ManualLogSource Log;
 
@@ -60,6 +61,7 @@ namespace LuisRandomness.BBPCustomPosters
         internal static ConfigEntry<bool> config_invertForeignPosterBlacklist;
 
         internal static ConfigEntry<bool> config_globalPostersOnly;
+
         internal static ConfigEntry<bool> config_logAllPosters;
 
         void Awake()
@@ -179,7 +181,7 @@ namespace LuisRandomness.BBPCustomPosters
 
             foreach (TMP_FontAsset font in assets)
             {
-                yield return $"Grabbing TextMesh Pro font \"{font.name}\"";
+                yield return $"Grabbing TMP font \"{font.name}\"";
 
                 if (fontAssets.ContainsKey(font.name))
                 {
@@ -291,7 +293,7 @@ namespace LuisRandomness.BBPCustomPosters
                         else
                             if (currentPosters.Contains(poster))
                             currentPosters.Remove(poster);
-                    }   
+                    }
                 }
                 lvl.posters = currentPosters.ToArray();
             }
@@ -311,14 +313,15 @@ namespace LuisRandomness.BBPCustomPosters
 
             //TODO: Rework logallposters
 
-            if (!config_logAllPosters.Value) return;
+            if (config_logAllPosters.Value)
+            {
+                Logger.LogInfo($"Floor \"{name}\", ID {id}");
+                Logger.LogInfo($"(Reference name \"{fixedName}\"):");
+                foreach (WeightedPosterObject poster in obj.posters)
+                    Logger.LogInfo($" - \"{poster.selection.name}\" ({poster.GetSource()}, Weight: {poster.weight})");
 
-            Logger.LogInfo($"Floor \"{name}\", ID {id}");
-            Logger.LogInfo($"(Reference name \"{fixedName}\"):");
-            foreach (WeightedPosterObject poster in obj.posters)
-                Logger.LogInfo($" - \"{poster.selection.name}\" ({poster.GetSource()}, Weight: {poster.weight})");
-
-            Logger.LogInfo("");
+                Logger.LogInfo("");
+            }
         }
 
         public static void AddOptionalPackFromMod(BaseUnityPlugin plugin, string name, params string[] args)
@@ -350,7 +353,7 @@ namespace LuisRandomness.BBPCustomPosters
         {
             if (!plugin)
                 throw new MissingReferenceException("BepInEx Plugin not set!");
-            
+
             int length = args.Length + 1;
             string[] paths2 = new string[length];
 
@@ -419,11 +422,39 @@ namespace LuisRandomness.BBPCustomPosters
             int num = cached ? cachedLevelNum : CoreGameManager.Instance.sceneObject.levelNo;
 
             foreach (PosterPack pack in CustomPostersPlugin.activePosterPacks)
-                if (pack.postersByCategory.TryGetValue(__result.category, out List<WeightedCustomPoster> _posters))
-                {
+                if (pack.roomPosters.TryGetValue(__result.category, out List<WeightedCustomPoster> _posters))
                     __result.potentialPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(lvl, num)));
-                    __result.potentialPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted() || x.selection == null);
-                }
+
+            __result.potentialPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted() || x.selection == null);
+        }
+    }
+    
+    [HarmonyPatch(typeof(ChalkboardBuilderFunction))]
+    [HarmonyPatch("Build")]
+    internal class ChalkboardBuilderPatch
+    {
+        private static bool Prefix(ChalkboardBuilderFunction __instance, ref WeightedPosterObject[] ___chalkBoards)
+        {
+            if (CustomPostersPlugin.config_globalPostersOnly.Value)
+                return true;
+
+            string lvl = RoomPlacementPatch.cached ? RoomPlacementPatch.cachedLevelTitle : CoreGameManager.Instance.sceneObject.levelTitle;
+            int num = RoomPlacementPatch.cached ? RoomPlacementPatch.cachedLevelNum : CoreGameManager.Instance.sceneObject.levelNo;
+
+            List<WeightedPosterObject> weightedPosters = new List<WeightedPosterObject>(___chalkBoards);
+
+            foreach (PosterPack pack in CustomPostersPlugin.activePosterPacks)
+            {
+                if (pack.chalkboardPosters.TryGetValue(RoomCategory.Null, out List<WeightedCustomPoster> _posters))
+                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(lvl, num)));
+                if (pack.chalkboardPosters.TryGetValue(__instance.room.category, out _posters))
+                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(lvl, num)));
+            }
+
+            weightedPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted() || x.selection == null);
+            ___chalkBoards = weightedPosters.ToArray();
+
+            return ___chalkBoards.Length > 0;
         }
     }
 }

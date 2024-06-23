@@ -12,6 +12,7 @@ using MTM101BaldAPI.AssetTools;
 using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
+using Newtonsoft.Json.Converters;
 
 namespace LuisRandomness.BBPCustomPosters
 {
@@ -56,12 +57,16 @@ namespace LuisRandomness.BBPCustomPosters
             poster.pack = pack;
 
             poster.weight = properties.posterWeight;
-            poster.global = properties.global;
+
+            if (!properties.global)
+                poster.spawnMode = PosterSpawnMode.Room;
+            else if (!Enum.TryParse<PosterSpawnMode>(properties.spawnMode, true, out poster.spawnMode))
+                poster.spawnMode = PosterSpawnMode.Global;
 
             poster.levelWhitelist = properties.levelWhitelist;
             poster.reverseWhitelist = properties.reverseWhitelist;
 
-            if (properties.targetRooms.Length == 0)
+            if (poster.spawnMode == PosterSpawnMode.Global || properties.targetRooms.Length == 0)
             {
                 poster.targetRooms = new RoomCategory[0];
             }
@@ -138,7 +143,7 @@ namespace LuisRandomness.BBPCustomPosters
         private bool reverseWhitelist;
 
         public RoomCategory[] targetRooms;
-        public bool global;
+        public PosterSpawnMode spawnMode;
 
         private int weight;
         public int Weight => weight > 0 ? weight : pack.DefaultWeight;
@@ -215,6 +220,12 @@ namespace LuisRandomness.BBPCustomPosters
         public int segmentId = 0;
     }
 
+    public enum PosterSpawnMode
+    {
+        Global,
+        Room,
+        Chalkboard
+    }
 
     public class CustomPosterProperties
     {
@@ -228,7 +239,10 @@ namespace LuisRandomness.BBPCustomPosters
 
         [Obsolete("Poster length is automatically dictated by aspect ratio!")]
         public uint posterLength = 1;
-        
+
+        [Obsolete("Please use 'posterSpawnType' instead!")]
+        public bool global = true;
+
         /* A whitelist indicating which levels will contain the poster.
          *  Levels are declared via string values.
          *  If empty, it will spawn in any level.
@@ -251,9 +265,12 @@ namespace LuisRandomness.BBPCustomPosters
         */
         public string[] targetRooms = new string[0];
 
-        /* Are included in the level's global poster pool. 
-         * If false, this will only apply to any room assets.
+        /* The type of poster pool the poster will be included in, reflects PosterSpawnMode enum.
+         * Global - the poster can appear in any wall in the level
+         * Room - the poster will only appear in listed room types
+         * Chalkboard - appears as chalkboard, only filtered if target rooms are included
         */
-        public bool global = true;
+        public string spawnMode = "Global";
+        
     }
 }

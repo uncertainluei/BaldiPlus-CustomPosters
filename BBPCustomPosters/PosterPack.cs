@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using LuisRandomness.BBPCustomPosters.Packs;
+using System.Reflection;
+using static Rewired.Controller;
+using Newtonsoft.Json.Converters;
 
 namespace LuisRandomness.BBPCustomPosters
 {
@@ -46,7 +49,8 @@ namespace LuisRandomness.BBPCustomPosters
         public void DisposeAllPosters()
         {
             globalPosters.Clear();
-            postersByCategory.Clear();
+            roomPosters.Clear();
+            chalkboardPosters.Clear();
 
             // Destroys all posters and their contents to free up memory
             foreach (CustomPosterObject poster in posters)
@@ -106,7 +110,7 @@ namespace LuisRandomness.BBPCustomPosters
 
                 name = Path.ChangeExtension(entry.FullName, null);
 
-                if (!entry.ReadAllBytes().TryCreateTexture(name, out texture))
+                if (!entry.ReadAllBytes().TryCreateTexture(name.Replace("/", "-"), out texture)) // Fix for texture packs mod crash
                 {
                     Debug.LogError($"{packName}: Poster texture \"{name}\" could not load! This could be because of an unsupported file format.");
                     continue;
@@ -138,23 +142,47 @@ namespace LuisRandomness.BBPCustomPosters
 
                 WeightedCustomPoster weighted = new WeightedCustomPoster(poster);
 
-                if (poster.global)
-                    globalPosters.Add(weighted);
-                
-                List<WeightedCustomPoster> _posters;
-
-                foreach (RoomCategory cat in poster.targetRooms)
+                switch (poster.spawnMode)
                 {
-                    if (!postersByCategory.TryGetValue(cat, out _posters))
-                    {
-                        _posters = new List<WeightedCustomPoster>();
-                        postersByCategory[cat] = _posters;
-                    }
-                    _posters.Add(weighted);
+                    case PosterSpawnMode.Global:
+                        globalPosters.Add(weighted);
+                        break;
+                    case PosterSpawnMode.Room:
+                        AddPosterIntoMode(poster, weighted, roomPosters, false);
+                        break;
+                    case PosterSpawnMode.Chalkboard:
+                        AddPosterIntoMode(poster, weighted, chalkboardPosters, true);
+                        break;
                 }
             }
         }
 
+        private void AddPosterIntoMode(CustomPosterObject poster, WeightedCustomPoster weighted, Dictionary<RoomCategory, List<WeightedCustomPoster>> dictionary, bool includeNull)
+        {
+            List<WeightedCustomPoster> _posters;
+
+            // TODO:: Improve this to not include duplicates
+            if (includeNull && poster?.targetRooms.Length == 0)
+            {
+                if (!dictionary.TryGetValue(RoomCategory.Null, out _posters))
+                {
+                    _posters = new List<WeightedCustomPoster>();
+                    dictionary[RoomCategory.Null] = _posters;
+                }
+                _posters.Add(weighted);
+            }
+
+            foreach (RoomCategory cat in poster.targetRooms)
+            {
+                if (!dictionary.TryGetValue(cat, out _posters))
+                {
+                    _posters = new List<WeightedCustomPoster>();
+                    dictionary[cat] = _posters;
+                }
+                _posters.Add(weighted);
+            }
+        }
+        
         private bool TryUpdateMetadata(string json, out Exception exception)
         {
             PosterPackMetadata newMeta = new PosterPackMetadata();
@@ -193,7 +221,8 @@ namespace LuisRandomness.BBPCustomPosters
         private List<CustomPosterObject> posters = new List<CustomPosterObject>();
 
         public List<WeightedCustomPoster> globalPosters = new List<WeightedCustomPoster>();
-        public Dictionary<RoomCategory, List<WeightedCustomPoster>> postersByCategory = new Dictionary<RoomCategory, List<WeightedCustomPoster>>();
+        public Dictionary<RoomCategory, List<WeightedCustomPoster>> roomPosters = new Dictionary<RoomCategory, List<WeightedCustomPoster>>();
+        public Dictionary<RoomCategory,List<WeightedCustomPoster>> chalkboardPosters = new Dictionary<RoomCategory, List<WeightedCustomPoster>>();
 
         public int DefaultWeight => metadata.defaultWeight > 0 ? metadata.defaultWeight : CustomPostersPlugin.config_defaultWeight.Value; // TODO: Simplify
 
