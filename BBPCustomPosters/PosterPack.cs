@@ -38,7 +38,7 @@ namespace LuisRandomness.BBPCustomPosters
 
             if (!PackFormatReader.TryGrabFormat(dir, ext, out format))
             {
-                Debug.LogWarning($"Poster pack \"{Path.GetFileName(dir)}\" could not be loaded; either extension {ext} is not supported, or provided data is invalid.");
+                CustomPostersPlugin.Log.LogWarning($"Poster pack \"{Path.GetFileName(dir)}\" could not be loaded; either extension {ext} is not supported, or provided data is invalid.");
                 Dispose();
                 return;
             }
@@ -92,7 +92,7 @@ namespace LuisRandomness.BBPCustomPosters
                 }
                 if (!TryUpdateMetadata(propertiesEntry.ReadAllText(), out Exception e))
                 {
-                    Debug.LogWarning($"{packName}: Pack metadata file (pack.json) does not seem to be valid! Exception trace: {e.ToString()}");
+                    CustomPostersPlugin.Log.LogWarning($"{packName}: Pack metadata file (pack.json) does not seem to be valid! Exception trace: {e.ToString()}");
                     Dispose();
                     return;
                 }
@@ -112,7 +112,7 @@ namespace LuisRandomness.BBPCustomPosters
 
                 if (!entry.ReadAllBytes().TryCreateTexture(name.Replace("/", "-"), out texture)) // Fix for texture packs mod crash
                 {
-                    Debug.LogError($"{packName}: Poster texture \"{name}\" could not load! This could be because of an unsupported file format.");
+                    CustomPostersPlugin.Log.LogError($"{packName}: Poster texture \"{name}\" could not load! This could be because of an unsupported file format.");
                     continue;
                 }
 
@@ -133,8 +133,8 @@ namespace LuisRandomness.BBPCustomPosters
                 {
                     UnityEngine.Object.Destroy(texture);
 
-                    Debug.LogError($"{packName}: Poster \"{name}\" could not load! See exception below:");
-                    Debug.LogException(e);
+                    CustomPostersPlugin.Log.LogError($"{packName}: Poster \"{name}\" could not load! See exception below:");
+                    CustomPostersPlugin.Log.LogError(e);
                     continue;
                 }
 

@@ -31,7 +31,7 @@ namespace LuisRandomness.BBPCustomPosters
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.luisrandomness.bbp_custom_posters";
-        public const string ModVersion = "2024.3.1.0";
+        public const string ModVersion = "2024.3.1.1";
 
         internal static ManualLogSource Log;
 
@@ -232,9 +232,16 @@ namespace LuisRandomness.BBPCustomPosters
 
                 if (!posterPacks.ContainsKey(temp.path))
                 {
-                    newPack = new PosterPack(temp);
-                    if (!newPack.disposed)
-                        posterPacks.Add(temp.path, newPack);
+                    try
+                    {
+                        newPack = new PosterPack(temp);
+                        if (!newPack.disposed)
+                            posterPacks.Add(temp.path, newPack);
+                    }
+                    catch (Exception e)
+                    {
+                        MTM101BaldiDevAPI.CauseCrash(Info, e);
+                    }
                 }
 
                 idx++;
@@ -246,9 +253,16 @@ namespace LuisRandomness.BBPCustomPosters
 
                 if (!posterPacks.ContainsKey(pack))
                 {
-                    newPack = new PosterPack(pack);
-                    if (!newPack.disposed)
-                        posterPacks.Add(pack, newPack);
+                    try
+                    {
+                        newPack = new PosterPack(pack);
+                        if (!newPack.disposed)
+                            posterPacks.Add(pack, newPack);
+                    }
+                    catch (Exception e)
+                    {
+                        MTM101BaldiDevAPI.CauseCrash(Info, e);
+                    }
                 }
 
                 idx++;
@@ -256,11 +270,6 @@ namespace LuisRandomness.BBPCustomPosters
 
             activePosterPacks.Clear();
             activePosterPacks.AddRange(posterPacks.Values);
-
-            foreach (PosterPack pack in activePosterPacks)
-            {
-                Debug.Log(pack.globalPosters.Count);
-            }
             yield break;
         }
 
