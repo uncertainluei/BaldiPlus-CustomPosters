@@ -117,7 +117,7 @@ namespace LuisRandomness.BBPCustomPosters
                     else
                     {
                         posters[i] = ObjectCreators.CreatePosterObject(split, customTextData.Where((CustomPosterTextData y) => y.segmentId == i).ToArray());
-                        posters[i].name = $"{fixedName}_{i}";
+                        posters[i].name = $"{name}_{i}";
                     }
                     i++;
 
