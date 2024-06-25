@@ -97,13 +97,15 @@ namespace LuisRandomness.BBPCustomPosters
                 PosterObject[] posters = new PosterObject[length];
                 posters[0] = poster; // Set the first object of the multi-poster array as the newly made poster
 
+                string fixedName = texture.name;
+
                 int i = 0;
                 for (int x = 0; x < width; x += height) // Re-use height instead of a new local variable cus 1:1 aspect ratio
                 {
                     Texture2D split = new Texture2D(height, height, TextureFormat.RGBA32, false)
                     {
                         filterMode = FilterMode.Point,
-                        name = $"{name}_{i}"
+                        name = $"{fixedName}_{i}"
                     };
 
                     Color[] pixels = texture.GetPixels(x, 0, height, height);
@@ -115,7 +117,7 @@ namespace LuisRandomness.BBPCustomPosters
                     else
                     {
                         posters[i] = ObjectCreators.CreatePosterObject(split, customTextData.Where((CustomPosterTextData y) => y.segmentId == i).ToArray());
-                        posters[i].name = $"{name}_{i}";
+                        posters[i].name = $"{fixedName}_{i}";
                     }
                     i++;
 
