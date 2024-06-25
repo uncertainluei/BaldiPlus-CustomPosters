@@ -31,7 +31,7 @@ namespace LuisRandomness.BBPCustomPosters
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.luisrandomness.bbp_custom_posters";
-        public const string ModVersion = "2024.3.1.1";
+        public const string ModVersion = "2024.3.1.2";
 
         internal static ManualLogSource Log;
 
