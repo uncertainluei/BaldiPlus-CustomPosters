@@ -151,17 +151,11 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 yield return null;
             }
 
-            CustomLevelObject lvl;
-
             // Force-updates all SceneObjects
             foreach (SceneObject scene in Resources.FindObjectsOfTypeAll<SceneObject>().Where(x => x.levelObject != null).ToArray())
             {
-                if (!(scene.levelObject is CustomLevelObject))
-                    continue;
-                lvl = (CustomLevelObject)scene.levelObject;
-
-                OnGeneratorAddend(scene.levelTitle, scene.levelNo, lvl);
-                OnGeneratorFinalizer(scene.levelTitle, scene.levelNo, lvl);
+                OnGeneratorAddend(scene.levelTitle, scene.levelNo, scene);
+                OnGeneratorFinalizer(scene.levelTitle, scene.levelNo, scene);
             }
             yield break;
         }
@@ -266,7 +260,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             yield break;
         }
 
-        void OnGeneratorAddend(string name, int id, CustomLevelObject lvl)
+        void OnGeneratorAddend(string name, int id, SceneObject scene)
         {
             if (name == currentFloorName && id == currentFloorId) return;
 
@@ -278,6 +272,8 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             RoomPlacementPatch.cached = true;
             RoomPlacementPatch.cachedLevelTitle = name;
             RoomPlacementPatch.cachedLevelNum = id;
+
+            LevelObject lvl = scene.levelObject;
 
             // If there aren't any posters in the map, don't add them
             if (lvl.posters.Length > 0)
@@ -301,7 +297,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             }
         }
 
-        private void OnGeneratorFinalizer(string name, int id, CustomLevelObject obj)
+        private void OnGeneratorFinalizer(string name, int id, SceneObject scene)
         {
             if (currentFloorFinalized) return;
             currentFloorFinalized = true;
@@ -309,9 +305,10 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             string fixedName = (name == "INF") ? (name + id) : name; // Infinite Floors support
 
             // Remove blacklisted posters from the generator
-            List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(obj.posters);
+            LevelObject lvl = scene.levelObject;
+            List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(lvl.posters);
             currentPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted());
-            obj.posters = currentPosters.ToArray();
+            lvl.posters = currentPosters.ToArray();
 
             //TODO: Rework logallposters
 
@@ -319,7 +316,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             {
                 Logger.LogInfo($"Floor \"{name}\", ID {id}");
                 Logger.LogInfo($"(Reference name \"{fixedName}\"):");
-                foreach (WeightedPosterObject poster in obj.posters)
+                foreach (WeightedPosterObject poster in lvl.posters)
                     Logger.LogInfo($" - \"{poster.selection.name}\" ({poster.GetSource()}, Weight: {poster.weight})");
 
                 Logger.LogInfo("");
