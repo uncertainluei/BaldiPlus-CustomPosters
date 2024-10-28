@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
-using System.Reflection;
 using System.Linq;
-using System.Net.NetworkInformation;
-using BepInEx;
-using JetBrains.Annotations;
 using MTM101BaldAPI;
-using MTM101BaldAPI.AssetTools;
+
 using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
-using Newtonsoft.Json.Converters;
 
-namespace LuisRandomness.BBPCustomPosters
+namespace UncertainLuei.BaldiPlus.CustomPosters
 {
     public class WeightedCustomPoster : WeightedPosterObject
     {
@@ -25,7 +19,7 @@ namespace LuisRandomness.BBPCustomPosters
             this.weight = weight;
         }
 
-        public WeightedCustomPoster(CustomPosterObject poster) : this(poster,poster.Weight)
+        public WeightedCustomPoster(CustomPosterObject poster) : this(poster, poster.Weight)
         {
         }
 
@@ -52,15 +46,13 @@ namespace LuisRandomness.BBPCustomPosters
             CustomPosterObject poster = CreateInstance<CustomPosterObject>();
             poster.name = name;
             poster.baseTexture = texture;
-            poster.textData = customTextData.Where((CustomPosterTextData x) => x.segmentId == 0).ToArray();
+            poster.textData = customTextData.Where((x) => x.segmentId == 0).ToArray();
 
             poster.pack = pack;
 
             poster.weight = properties.posterWeight;
 
-            if (!properties.global)
-                poster.spawnMode = PosterSpawnMode.Room;
-            else if (!Enum.TryParse<PosterSpawnMode>(properties.spawnMode, true, out poster.spawnMode))
+            if (!Enum.TryParse(properties.spawnMode, true, out poster.spawnMode))
                 poster.spawnMode = PosterSpawnMode.Global;
 
             poster.levelWhitelist = properties.levelWhitelist;
@@ -116,7 +108,7 @@ namespace LuisRandomness.BBPCustomPosters
                         poster.baseTexture = split;
                     else
                     {
-                        posters[i] = ObjectCreators.CreatePosterObject(split, customTextData.Where((CustomPosterTextData y) => y.segmentId == i).ToArray());
+                        posters[i] = ObjectCreators.CreatePosterObject(split, customTextData.Where((y) => y.segmentId == i).ToArray());
                         posters[i].name = $"{name}_{i}";
                     }
                     i++;
@@ -236,14 +228,8 @@ namespace LuisRandomness.BBPCustomPosters
         /* How common/rare it will be in comparison to other posters.
          * If set to 0, this will be set to the default desired value.
         */
-        [Range(0,float.MaxValue)]
+        [Range(0, float.MaxValue)]
         public int posterWeight = 0;
-
-        [Obsolete("Poster length is automatically dictated by aspect ratio!")]
-        public uint posterLength = 1;
-
-        [Obsolete("Please use 'posterSpawnType' instead!")]
-        public bool global = true;
 
         /* A whitelist indicating which levels will contain the poster.
          *  Levels are declared via string values.
@@ -273,6 +259,6 @@ namespace LuisRandomness.BBPCustomPosters
          * Chalkboard - appears as chalkboard, only filtered if target rooms are included
         */
         public string spawnMode = "Global";
-        
+
     }
 }

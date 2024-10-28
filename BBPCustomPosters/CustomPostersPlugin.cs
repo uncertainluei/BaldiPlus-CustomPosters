@@ -1,37 +1,35 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-
-using UnityEngine;
-using TMPro;
-
-using MTM101BaldAPI;
-using MTM101BaldAPI.AssetTools;
-using MTM101BaldAPI.Registers;
-
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 
 using HarmonyLib;
 
-// Curse UnityEngine.JsonUtility, all my homies use Json.Net
-using Newtonsoft.Json;
-using MTM101BaldAPI.Reflection;
-using System.Linq;
-using LuisRandomness.BBPCustomPosters.Packs;
-using System.IO.Compression;
-using Newtonsoft.Json.Converters;
+using MTM101BaldAPI;
+using MTM101BaldAPI.AssetTools;
+using MTM101BaldAPI.Registers;
 
-namespace LuisRandomness.BBPCustomPosters
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+
+using TMPro;
+
+using UncertainLuei.BaldiPlus.CustomPosters.Packs;
+
+using UnityEngine;
+
+
+namespace UncertainLuei.BaldiPlus.CustomPosters
 {
-    [BepInPlugin(ModGuid, "BB+ Custom Posters", ModVersion)]
+    [BepInPlugin(ModGuid, "Custom Posters", ModVersion)]
     [BepInDependency("mtm101.rulerp.bbplus.baldidevapi", BepInDependency.DependencyFlags.HardDependency)]
     public class CustomPostersPlugin : BaseUnityPlugin
     {
-        public const string ModGuid = "io.github.luisrandomness.bbp_custom_posters";
-        public const string ModVersion = "2024.3.1.2";
+        public const string ModGuid = "io.github.uncertainluei.baldiplus.customposters";
+        public const string ModVersion = "2024.4";
 
         internal static ManualLogSource Log;
 
@@ -43,11 +41,9 @@ namespace LuisRandomness.BBPCustomPosters
 
         private static Dictionary<string, int> posterDiffs = new Dictionary<string, int>();
 
-        private string _floorName;
-        private int _floorNum;
-        private bool _lastFloorFinalized;
-
-        private List<CustomPosterObject> _posters;
+        private string currentFloorName;
+        private int currentFloorId;
+        private bool currentFloorFinalized;
 
         private static bool loaded = false;
 
@@ -59,8 +55,6 @@ namespace LuisRandomness.BBPCustomPosters
         internal static ConfigEntry<string> config_foreignPosterBlacklist;
         internal static string[] blacklistedPostersRaw;
         internal static ConfigEntry<bool> config_invertForeignPosterBlacklist;
-
-        internal static ConfigEntry<bool> config_globalPostersOnly;
 
         internal static ConfigEntry<bool> config_logAllPosters;
 
@@ -75,6 +69,11 @@ namespace LuisRandomness.BBPCustomPosters
             posterPackBlueprints.Add(new PosterPackBlueprint(
                 Info, PosterPackType.Personal, "Personal",
                 Path.Combine(AssetLoader.GetModPath(this), "Posters"),
+                true, PosterPackMetadata.personalMeta));
+            // Legacy personal pack for backwards compat
+            posterPackBlueprints.Add(new PosterPackBlueprint(
+                Info, PosterPackType.Personal, "Personal_Legacy",
+                Path.Combine(Application.streamingAssetsPath, "Modded", "io.github.luisrandomness.bbp_custom_posters", "Posters"),
                 true, PosterPackMetadata.personalMeta));
 
             // Before generator management events
@@ -93,12 +92,6 @@ namespace LuisRandomness.BBPCustomPosters
                 "DefaultWeight",
                 50,
                 "Default poster weight if variable weight is not set.");
-
-            config_globalPostersOnly = Config.Bind(
-                "General",
-                "GlobalPostersOnly",
-                false,
-                "Do not attempt to generate non-global/room-specific posters. This is in case such a failsave is necessary.");
 
             config_foreignPosterBlacklist = Config.Bind("Foreign Posters",
                 "Blacklist",
@@ -275,11 +268,11 @@ namespace LuisRandomness.BBPCustomPosters
 
         void OnGeneratorAddend(string name, int id, CustomLevelObject lvl)
         {
-            if (name == _floorName && id == _floorNum) return;
+            if (name == currentFloorName && id == currentFloorId) return;
 
-            _floorName = name;
-            _floorNum = id;
-            _lastFloorFinalized = false;
+            currentFloorName = name;
+            currentFloorId = id;
+            currentFloorFinalized = false;
 
             // Cache level title and num for compatibility with mods that invoke generator events on the generator itself
             RoomPlacementPatch.cached = true;
@@ -310,8 +303,8 @@ namespace LuisRandomness.BBPCustomPosters
 
         private void OnGeneratorFinalizer(string name, int id, CustomLevelObject obj)
         {
-            if (_lastFloorFinalized) return;
-            _lastFloorFinalized = true;
+            if (currentFloorFinalized) return;
+            currentFloorFinalized = true;
 
             string fixedName = (name == "INF") ? (name + id) : name; // Infinite Floors support
 
@@ -379,7 +372,7 @@ namespace LuisRandomness.BBPCustomPosters
                 throw new MissingReferenceException("BepInEx Plugin not set!");
             if (loaded)
                 throw new Exception($"Could not add posters from {plugin.Info.Metadata.Name}, path \"{path}\"! Please execute this before the \"Mod Asset Pre-Load\" loading event!");
-
+            
             posterPackBlueprints.Add(new PosterPackBlueprint(plugin.Info, path, defaultWeight));
         }
     }
@@ -424,9 +417,6 @@ namespace LuisRandomness.BBPCustomPosters
 
         private static void Postfix(RoomController __result)
         {
-            if (CustomPostersPlugin.config_globalPostersOnly.Value)
-                return;
-
             string lvl = cached ? cachedLevelTitle : CoreGameManager.Instance.sceneObject.levelTitle;
             int num = cached ? cachedLevelNum : CoreGameManager.Instance.sceneObject.levelNo;
 
@@ -444,9 +434,6 @@ namespace LuisRandomness.BBPCustomPosters
     {
         private static bool Prefix(ChalkboardBuilderFunction __instance, ref WeightedPosterObject[] ___chalkBoards)
         {
-            if (CustomPostersPlugin.config_globalPostersOnly.Value)
-                return true;
-
             string lvl = RoomPlacementPatch.cached ? RoomPlacementPatch.cachedLevelTitle : CoreGameManager.Instance.sceneObject.levelTitle;
             int num = RoomPlacementPatch.cached ? RoomPlacementPatch.cachedLevelNum : CoreGameManager.Instance.sceneObject.levelNo;
 

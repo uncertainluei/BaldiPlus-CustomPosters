@@ -5,7 +5,7 @@ using UnityEngine;
 using System.IO;
 using System.IO.Compression;
 
-namespace LuisRandomness.BBPCustomPosters.Packs
+namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
 {
     public static class PackFormatReader
     {

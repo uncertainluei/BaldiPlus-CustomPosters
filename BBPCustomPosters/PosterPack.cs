@@ -4,12 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using LuisRandomness.BBPCustomPosters.Packs;
-using System.Reflection;
-using static Rewired.Controller;
-using Newtonsoft.Json.Converters;
+using UncertainLuei.BaldiPlus.CustomPosters.Packs;
 
-namespace LuisRandomness.BBPCustomPosters
+namespace UncertainLuei.BaldiPlus.CustomPosters
 {
     public class PosterPack
     {
@@ -43,7 +40,7 @@ namespace LuisRandomness.BBPCustomPosters
                 return;
             }
 
-            AddPosters();
+            DeserializePack();
         }
 
         public void DisposeAllPosters()
@@ -75,7 +72,7 @@ namespace LuisRandomness.BBPCustomPosters
             format.Reload();
         }
 
-        private void AddPosters()
+        private void DeserializePack()
         {
             string name = "", ext;
             Texture2D texture;
@@ -282,7 +279,7 @@ namespace LuisRandomness.BBPCustomPosters
             defaultWeight = 0
         };
 
-        [JsonRequired] public byte packVersion = 0; // There will NEVER be more than 255 pack versions
+        [JsonRequired] public byte packVersion = 1; // There will NEVER be more than 255 pack versions
 
         public string credits = "None";
         public string description = "No description set.";

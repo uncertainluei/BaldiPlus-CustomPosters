@@ -1,13 +1,10 @@
-﻿using Rewired;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 
-namespace LuisRandomness.BBPCustomPosters
+namespace UncertainLuei.BaldiPlus.CustomPosters
 {
     public static class ZipExtensions
     {
@@ -62,10 +59,13 @@ namespace LuisRandomness.BBPCustomPosters
 
         public static string GetSource(this WeightedPosterObject poster)
         {
-            if (poster is WeightedCustomPoster)
-                return ((WeightedCustomPoster)poster).customPoster.pack.packName;
+            if (poster is WeightedCustomPoster weightedCustom)
+                return weightedCustom.customPoster.pack.packName;
 
-            return "Vanilla/Unknown";
+            if (poster.selection.GetInstanceID() > 0)
+                return "Vanilla";
+
+            return "Unknown";
         }
 
         private static CustomPosterTextData[] blankData = new CustomPosterTextData[0];
