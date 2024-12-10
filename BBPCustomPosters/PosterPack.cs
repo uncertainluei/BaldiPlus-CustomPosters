@@ -272,7 +272,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
     public class PosterPackMetadata
     {
-        [JsonRequired] public byte packVersion = 1; // There will NEVER be more than 255 pack versions
+        [JsonRequired] public byte packVersion = 0; // There will NEVER be more than 255 pack versions
 
         public string credits = "None";
         public string description = "No description set.";
