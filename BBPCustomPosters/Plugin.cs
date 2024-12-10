@@ -7,14 +7,14 @@ using HarmonyLib;
 using MTM101BaldAPI;
 using MTM101BaldAPI.AssetTools;
 using MTM101BaldAPI.Registers;
-
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-
+using System.Text.Json.Nodes;
 using TMPro;
 
 using UncertainLuei.BaldiPlus.CustomPosters.Packs;
@@ -29,7 +29,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.uncertainluei.baldiplus.customposters";
-        public const string ModVersion = "2024.4";
+        public const string ModVersion = "2024.3.2";
 
         internal static ManualLogSource Log;
 
@@ -65,16 +65,31 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             InitConfigValues();
             InitDefaultReadChecks();
 
+
             // Add personal pack
             posterPackBlueprints.Add(new PosterPackBlueprint(
                 Info, PosterPackType.Personal, "Personal",
                 Path.Combine(AssetLoader.GetModPath(this), "Posters"),
-                true, PosterPackMetadata.personalMeta));
+                true, new PosterPackMetadata()
+                {
+                    credits = "Player",
+                    description = "Personal poster pack, ideal for quick prototyping",
+                    defaultWeight = 0
+                }));
+
             // Legacy personal pack for backwards compat
-            posterPackBlueprints.Add(new PosterPackBlueprint(
-                Info, PosterPackType.Personal, "Personal_Legacy",
-                Path.Combine(Application.streamingAssetsPath, "Modded", "io.github.luisrandomness.bbp_custom_posters", "Posters"),
-                true, PosterPackMetadata.personalMeta));
+            string legacyPath = Path.Combine(Application.streamingAssetsPath, "Modded", "io.github.luisrandomness.bbp_custom_posters", "Posters");
+            if (Directory.Exists(legacyPath))
+            {
+                posterPackBlueprints.Add(new PosterPackBlueprint(
+                Info, PosterPackType.Personal, "Personal_Legacy", legacyPath,
+                false, new PosterPackMetadata()
+                {
+                    credits = "Player",
+                    description = "Personal poster pack, for added posters before v2024.3.2",
+                    defaultWeight = 0
+                }));
+            }
 
             // Before generator management events
             LoadingEvents.RegisterOnAssetsLoaded(Info, GrabTmpFonts(), false);
@@ -371,6 +386,116 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 throw new Exception($"Could not add posters from {plugin.Info.Metadata.Name}, path \"{path}\"! Please execute this before the \"Mod Asset Pre-Load\" loading event!");
             
             posterPackBlueprints.Add(new PosterPackBlueprint(plugin.Info, path, defaultWeight));
+        }
+
+        // For debugging purposes
+        public static void DeserializeVanillaPosters(string outputDir)
+        {
+            if (!Directory.Exists(outputDir))
+            {
+                try
+                {
+                    Directory.CreateDirectory(outputDir);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Couldn't create directory! See below:\n{e}");
+                }
+            }
+
+            int idx, arrayLength;
+            string posterPath;
+            Texture2D tex;
+            List<PosterTextSettings> customTextData = new List<PosterTextSettings>();
+
+            List<PosterObject> posters = Resources.FindObjectsOfTypeAll<PosterObject>().Where(x => x.GetInstanceID() > 0).ToList();
+            List<PosterObject> postersToIgnore = new List<PosterObject>();
+            posters.Do(x =>
+            {
+                if (x.multiPosterArray != null && x.multiPosterArray.Length > 1)
+                {
+                    arrayLength = x.multiPosterArray.Length;
+                    for (idx = 1; idx < arrayLength; idx++)
+                        postersToIgnore.Add(x.multiPosterArray[idx]);
+                }
+            });
+            posters.RemoveAll(x => postersToIgnore.Contains(x));
+
+            posters.Do(x =>
+            {
+                customTextData.Clear();
+                posterPath = Path.Combine(outputDir, x.name);
+                if (x.multiPosterArray != null && x.multiPosterArray.Length > 1)
+                {
+                    idx = 0;
+                    arrayLength = x.baseTexture.width;
+
+                    tex = new Texture2D(arrayLength * x.multiPosterArray.Length, x.baseTexture.height);
+                    foreach (PosterObject poster in x.multiPosterArray)
+                    {
+                        tex.SetPixels(idx*arrayLength, 0, poster.baseTexture.width, poster.baseTexture.height, poster.baseTexture.isReadable ? poster.baseTexture.GetPixels() : poster.baseTexture.MakeReadableCopy(false).GetPixels());
+                        if (poster.textData != null && poster.textData.Length > 0)
+                        {
+                            poster.textData.Do(y => customTextData.Add(new PosterTextSettings()
+                            {
+                                segmentId = idx,
+
+                                alignment = y.alignment.ToString(),
+
+                                bold = y.style == FontStyles.Bold,
+                                italic = y.style == FontStyles.Italic,
+                                underline = y.style == FontStyles.Underline,
+
+                                color = ColorUtility.ToHtmlStringRGB(y.color),
+
+                                font = y.font.name,
+                                fontSize = y.fontSize,
+
+                                position = y.position.ToSerializable(),
+                                size = y.size.ToSerializable(),
+
+                                textKey = y.textKey
+                            }));
+                        }
+                        idx++;
+                        tex.Apply();
+                        File.WriteAllBytes(posterPath+".png", tex.EncodeToPNG());
+                    }
+                }
+                else
+                {
+                    if (x.baseTexture == null)
+                        x.baseTexture = (Texture2D)x.material[0].mainTexture;
+
+                    File.WriteAllBytes(posterPath + ".png", x.baseTexture.isReadable ? x.baseTexture.EncodeToPNG() : x.baseTexture.MakeReadableCopy(false).EncodeToPNG());
+                    
+                    if (x.textData != null && x.textData.Length > 0)
+                    {
+                        x.textData.Do(y => customTextData.Add(new PosterTextSettings()
+                        {
+                            alignment = y.alignment.ToString(),
+
+                            bold = y.style == FontStyles.Bold,
+                            italic = y.style == FontStyles.Italic,
+                            underline = y.style == FontStyles.Underline,
+
+                            color = ColorUtility.ToHtmlStringRGB(y.color),
+
+                            font = y.font.name,
+                            fontSize = y.fontSize,
+
+                            position = y.position.ToSerializable(),
+                            size = y.size.ToSerializable(),
+                        
+                            textKey = y.textKey
+                        }));
+                    }
+                }
+                File.WriteAllText(posterPath + ".json", JsonConvert.SerializeObject(new CustomPosterProperties()
+                {
+                    textData = customTextData.ToArray()
+                }, Formatting.Indented));
+            });
         }
     }
 

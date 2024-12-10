@@ -272,13 +272,6 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
     public class PosterPackMetadata
     {
-        [JsonIgnore] public static readonly PosterPackMetadata personalMeta = new PosterPackMetadata()
-        {
-            credits = "Player",
-            description = "Personal poster pack, ideal for quick prototyping",
-            defaultWeight = 0
-        };
-
         [JsonRequired] public byte packVersion = 1; // There will NEVER be more than 255 pack versions
 
         public string credits = "None";

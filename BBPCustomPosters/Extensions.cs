@@ -68,7 +68,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             return "Unknown";
         }
 
-        private static CustomPosterTextData[] blankData = new CustomPosterTextData[0];
+        private static readonly CustomPosterTextData[] blankData = new CustomPosterTextData[0];
 
         public static CustomPosterTextData[] Build(this PosterTextSettings[] customData)
         {
@@ -80,6 +80,15 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 newData[i] = new CustomPosterTextData(customData[i]);
 
             return newData;
+        }
+
+        public static SerializableIntVector2 ToSerializable(this IntVector2 vector)
+        {
+            return new SerializableIntVector2()
+            {
+                x = vector.x,
+                y = vector.z
+            };
         }
     }
 }
