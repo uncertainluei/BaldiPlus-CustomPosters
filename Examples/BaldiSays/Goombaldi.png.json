@@ -1,0 +1,13 @@
+{
+	"preset": "BaldiSays",
+    "posterWeight": 3,
+	"spawnMode": "Room",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "Remember, kids!\nMake sure you watch the Mario Bros. Super Show, or you'll become like me!",
+			"font": "COMIC_12_Pro",
+			"fontSize": 12
+		}
+	]
+}

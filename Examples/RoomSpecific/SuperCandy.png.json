@@ -1,0 +1,5 @@
+{
+    "posterWeight": 100,
+	"spawnMode": "Room",
+	"targetRooms": ["Cafeteria"]
+}

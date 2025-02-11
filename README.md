@@ -1,38 +1,40 @@
 # BB+ Custom Posters Mod
-![Version](https://img.shields.io/badge/version-2024.3.2-purple) ![License](https://img.shields.io/badge/license-MIT-blue?link=https://github.com/uncertainluei/BaldiPlus-CustomPosters/blob/main/LICENSE)
-![BB+ version](https://img.shields.io/badge/bb+-0.8-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.23-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-6.0.0.0-69C12E?color=red&link=https://gamebanana.com/mods/383711)
+![Version](https://img.shields.io/badge/version-2025.1-purple) ![License](https://img.shields.io/badge/license-MIT-blue?link=https://github.com/uncertainluei/BaldiPlus-CustomPosters/blob/main/LICENSE)
+![BB+ version](https://img.shields.io/badge/bb+-0.9-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.23-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-6.2.0.0-69C12E?color=red&link=https://gamebanana.com/mods/383711)
  
-A mod for [*Baldi's Basics Plus v0.8+*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of custom wall posters by using user-provided images.
+A mod for [*Baldi's Basics Plus v0.9*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of user-provided wall posters.
 
-Requires [*BepInEx v5.4.23 and above*](https://github.com/BepInEx/BepInEx/tag/v5.4.23) and [*Baldi's Basics Plus Dev API v6.0.0.0 and above*](https://gamebanana.com/mods/383711).
+Requires [*BepInEx v5.4.23 and above*](https://github.com/BepInEx/BepInEx/tag/v5.4.23) and [*Baldi's Basics Plus Dev API v6.2.0.0 and above*](https://gamebanana.com/mods/383711).
 
 Json.NET is bunded with the download, and is [licensed under MIT](https://github.com/JamesNK/Newtonsoft.Json?tab=MIT-1-ov-file#MIT-1-ov-file).
 
 ### Features provided by the mod
-- Creation of single-wall posters by providing either **only** a **.PNG** image or also a **.JSON** definition file
-	- **Custom posters should be added in `[BB+ INSTALL PATH]/BALDI_Data/StreamingAssets/Modded/io.github.uncertainluei.baldiplus.customposters/Posters`, and definition files must have the extension `.png.json`.**
+- Creation of single-wall posters by providing at least either a **.PNG**/**.JP(E)G** image or a **.JSON** definition file
+	- **Custom posters should be added in `[BB+ INSTALL PATH]/BALDI_Data/StreamingAssets/Modded/io.github.uncertainluei.baldiplus.customposters/Posters`.**
+	- **A definition file is attached to the poster's texture image if it's named after the latter's file name (incl. extension) i.e. `MyPoster.png.json`.**
+	- **An overlay (which will appear over its baked text) can be provided with an image file named after the base texture, and the `_Overlay` suffix.**
 	- **Other mods can depend on this and have their own poster paths read using the `CustomPostersPlugin.AddBuiltInPackFromMod` and/or '`CustomPostersPlugin.AddBuiltInPackFromDirectory` helper methods.**
 - Setting custom properties to any created poster, such as:
 	- The poster's *'weight'* probability in the generator
-	- ~~The width of the poster (allowing for *'multi-posters'*)~~ (This is now automatically set.)
 	- Floors the poster can/cannot appear on, **based on level name**
-	- Poster Text Data support (for both single and *'multi'* posters)
+	- Poster Text Data (for both single and *'multi'* posters)
 	- The poster's spawning mode, whether it can spawn anywhere, what rooms it can spawn in, or if it spawns as a chalkboard
+	- The preset of the poster, which affects the fallback texture and text data that it'll use.
 	- **Examples can be seen in the repository's `Examples` folder.**
 - The following configuration options, **which can be accessed from `[BB+ INSTALL PATH]/BepInEx/config/io.github.uncertainluei.baldiplus.customposters.cfg`**:
 	- Default weight of created posters if not specifically set
 	- White/blacklist of posters added by either the base game or other mods
 	- Debug option to log (**almost**) all posters in the floor to the console, useful for balancing created poster weights
-- Runtime-created text poster textures are now named for easier debugging using tools such as UnityExplorer 
+- Runtime-created text poster textures are now named for easier debugging using tools such as UnityExplorer
+- Support for Blayms's [**Better Chalkboard Font** mod](https://gamebanana.com/mods/525402).
 
 **Planned features for future versions:**
-- Better configuration system that accepts arrays (maybe)
 - Documentation on how to use the mod **(IMPORTANT!!)**
-- ~~Support for possible "poster packs" (.zip archives)~~
-  - A menu to toggle poster packs
+- Better configuration system that accepts arrays (maybe)
+- A menu to toggle and reload poster packs (reloading functionality is already in place)
 
 ### Screenshots
-*Some posters (excluding the ones in the first and last screenshots) seen here are not included with the normal download.*
+*Screenshots are slightly outdated and will eventually be replaced. Some posters (excluding the ones in the first and last screenshots) seen here are not included with the normal download.*
 ![Custom Multi-Poster with Text Data](https://i.imgur.com/pOoEoPV.png)
 ![Custom Multi-Poster in Classroom](https://i.imgur.com/gGWnWrJ.png)
 ![Custom Poster in Library](https://i.imgur.com/1mu1d35.png)

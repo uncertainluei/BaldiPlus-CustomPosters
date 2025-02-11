@@ -1,0 +1,12 @@
+{
+	"preset": "Hint",
+    "posterWeight": 75,
+	"spawnMode": "Room",
+	"targetRooms": ["Clinic"],
+	"textData":[
+		{
+			"textKey": "<b>WHAT TO DO IN A REFLEX TEST</b>\nOur trusted doctor will hold two buttons, and you're tasked to hit the right one fast enough! The <color=green>right</color> one is always the circle!",
+			"alignment": "top"
+		}
+	]
+}

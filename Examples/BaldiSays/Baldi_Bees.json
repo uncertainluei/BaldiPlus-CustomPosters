@@ -1,0 +1,11 @@
+{
+	"preset": "BaldiSays",
+    "posterWeight": 5,
+	"spawnMode": "Room",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "I hope you like bees!",
+		}
+	]
+}

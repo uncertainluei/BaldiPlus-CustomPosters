@@ -1,0 +1,11 @@
+{
+	"preset": "Chalkboard",
+    "posterWeight": 30,
+	"spawnMode": "Chalkboard",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "Look! A\nHomestar Runner\nreference!",
+		}
+	]
+}

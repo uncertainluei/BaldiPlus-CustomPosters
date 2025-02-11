@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<Version>2024.3.2</Version>
+		<Version>2025.1</Version>
 		<FileVersion>$(Version)</FileVersion>
 		<ProductVersion>$(Version)</ProductVersion>
 		<AssemblyName>UncertainLuei.$(MSBuildProjectName)</AssemblyName>
@@ -25,8 +25,11 @@
 		<Reference Include="Assembly-CSharp" Publicize="true">
 			<HintPath>..\Dependencies\Assembly-CSharp.dll</HintPath>
 		</Reference>
-		<Reference Include="MTM101BaldApi.dll">
+		<Reference Include="MTM101BaldApi.dll" Publicize="true">
 			<HintPath>..\Dependencies\MTM101BaldApi.dll</HintPath>
+		</Reference>
+		<Reference Include="BetterChalkboardFont.dll" Publicize="true">
+			<HintPath>..\Dependencies\BetterChalkboardFont.dll</HintPath>
 		</Reference>
 		<Reference Include="BepInEx">
 			<HintPath>..\Dependencies\BepInEx.dll</HintPath>

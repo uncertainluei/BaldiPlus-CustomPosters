@@ -1,0 +1,11 @@
+{
+	"preset": "Chalk_Chalk",
+    "posterWeight": 90,
+	"spawnMode": "Chalkboard",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "I see\n lemons"
+		}
+	]
+}

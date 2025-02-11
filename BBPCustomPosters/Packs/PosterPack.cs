@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UncertainLuei.BaldiPlus.CustomPosters.Packs;
+using System.Linq;
 
 namespace UncertainLuei.BaldiPlus.CustomPosters
 {
@@ -51,18 +52,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
             // Destroys all posters and their contents to free up memory
             foreach (CustomPosterObject poster in posters)
-            {
-
-                // Also destroys multi-posters
-                foreach (PosterObject obj2 in poster.multiPosterArray)
-                {
-                    UnityEngine.Object.Destroy(obj2.baseTexture);
-                    UnityEngine.Object.Destroy(obj2);
-                }
-
-                UnityEngine.Object.Destroy(poster.baseTexture);
-                UnityEngine.Object.Destroy(poster);
-            }
+                GameObject.Destroy(poster);
             posters.Clear();
         }
 
@@ -70,87 +60,148 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
         {
             DisposeAllPosters();
             format.Reload();
+            DeserializePack();
         }
 
         private void DeserializePack()
         {
-            string name = "", ext;
-            Texture2D texture;
+            string name = "", ext, last = "", toOverlay = "";
             CustomPosterProperties properties;
-            CustomPosterObject poster;
-            PackFileEntry propertiesEntry;
+            PackFileEntry fileEntry;
+            Texture2D tex, overlay = null;
 
             if (packType == PosterPackType.Pack)
             {
-                propertiesEntry = format.Get("pack.json");
-                if (propertiesEntry == null && metadata == null)
+                fileEntry = format.Get("pack.json");
+                if (fileEntry == null && metadata == null)
                 {
+                    CustomPostersPlugin.Log.LogWarning($"{packName}: Pack metadata file (pack.json) could not be found!");
+                    Dispose();
                     return;
                 }
-                if (!TryUpdateMetadata(propertiesEntry.ReadAllText(), out Exception e))
+                if (!TryUpdateMetadata(fileEntry.ReadAllText(), out Exception e))
                 {
-                    CustomPostersPlugin.Log.LogWarning($"{packName}: Pack metadata file (pack.json) does not seem to be valid! Exception trace: {e.ToString()}");
+                    CustomPostersPlugin.Log.LogWarning($"{packName}: Pack metadata file (pack.json) does not seem to be valid! Exception trace: {e}");
                     Dispose();
                     return;
                 }
             }
 
-            foreach (PackFileEntry entry in format.GetAllEntries())
+            List<PackFileEntry> entries = format.GetAllEntries().Where(x => !x.Name.IsNullOrWhiteSpace() && (packType != PosterPackType.Pack || x.FullName != "pack.json"))
+                .OrderBy(x => x.FullName) // Present as a failsave
+                .ToList();
+
+            for (int i = entries.Count - 1; i >= 0; i--)
             {
-                if (entry.Name.IsNullOrWhiteSpace())
+                if (entries[i].FullName == last)
                     continue;
 
-                ext = Path.GetExtension(entry.Name).Remove(0, 1).Trim();
+                ext = Path.GetExtension(entries[i].Name).Remove(0, 1).Trim();
+
+                name = Path.ChangeExtension(entries[i].FullName, null);
+                last = name;
+                if (name != toOverlay && overlay)
+                {
+                    GameObject.Destroy(overlay);
+                    overlay = null;
+                }
+
+                if (ext == "json")
+                {
+                    properties = new CustomPosterProperties();
+                    try
+                    {
+                        JsonConvert.PopulateObject(entries[i].ReadAllText(), properties);
+                    }
+                    catch (Exception e)
+                    {
+                        CustomPostersPlugin.Log.LogError($"{packName}: .json properties \"{name}\" could not be read!\nStack trace: {e}");
+                        continue;
+                    }
+
+                    ext = Path.GetExtension(name);
+                    if (ext.IsNullOrWhiteSpace())
+                    {
+                        DeserializePoster(name, properties, null);
+                        continue;
+                    }
+
+                    ext = ext.Remove(0, 1).Trim();
+                    if (ext != "png" && ext != "jpg" && ext != "jpeg")
+                        continue;
+
+                    fileEntry = format.Get(name);
+                    if (fileEntry == null)
+                    {
+                        CustomPostersPlugin.Log.LogError($"{packName}: Poster texture \"{name}\" could not be found!");
+                        continue;
+                    }
+                    if (!fileEntry.ReadAllBytes().TryCreateTexture(Path.ChangeExtension(name, null), out tex)) // Fix for texture packs mod crash
+                    {
+                        CustomPostersPlugin.Log.LogError($"{packName}: Poster texture \"{name}\" could not load! This could be because of an unsupported file format.");
+                        continue;
+                    }
+
+                    DeserializePoster(Path.ChangeExtension(name, null), properties, tex, overlay);
+                    overlay = null;
+                    continue;
+                }
 
                 if (ext != "png" && ext != "jpg" && ext != "jpeg")
                     continue;
 
-                name = Path.ChangeExtension(entry.FullName, null);
-
-                if (!entry.ReadAllBytes().TryCreateTexture(name.Replace("/", "-"), out texture)) // Fix for texture packs mod crash
+                if (!entries[i].ReadAllBytes().TryCreateTexture(Path.ChangeExtension(name, null), out tex)) // Fix for texture packs mod crash
                 {
                     CustomPostersPlugin.Log.LogError($"{packName}: Poster texture \"{name}\" could not load! This could be because of an unsupported file format.");
                     continue;
                 }
-
-                propertiesEntry = format.Get(entry.FullName + ".json");
-                if (propertiesEntry != null)
+                if (name.ToLower().EndsWith("_overlay") && format.Get(toOverlay = $"{name.Remove(name.Length - 8)}.{ext}") != null)
                 {
-                    properties = new CustomPosterProperties();
-                    JsonConvert.PopulateObject(propertiesEntry.ReadAllText(), properties);
-                }
-                else
-                    properties = CustomPosterProperties.defaultProperties;
-
-                try
-                {
-                    poster = CustomPosterObject.CreateInstance(name, this, texture, properties);
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Object.Destroy(texture);
-
-                    CustomPostersPlugin.Log.LogError($"{packName}: Poster \"{name}\" could not load! See exception below:");
-                    CustomPostersPlugin.Log.LogError(e);
+                    overlay = tex;
                     continue;
                 }
 
-                posters.Add(poster);
+                DeserializePoster(Path.ChangeExtension(name, null), CustomPosterProperties.defaultProperties, tex, null);
+                overlay = null;
+            }
 
-                WeightedCustomPoster weighted = new WeightedCustomPoster(poster);
+            if (overlay)
+                GameObject.Destroy(overlay);
+        }
 
-                switch (poster.spawnMode)
-                {
-                    case PosterSpawnMode.Global:
-                        globalPosters.Add(weighted);
-                        break;
-                    case PosterSpawnMode.Room:
-                        AddPosterIntoMode(poster, weighted, roomPosters, false);
-                        break;
-                    case PosterSpawnMode.Chalkboard:
-                        AddPosterIntoMode(poster, weighted, chalkboardPosters, true);
-                        break;
-                }
+        private void DeserializePoster(string name, CustomPosterProperties properties, Texture2D tex = null, Texture2D overlay = null)
+        {
+            CustomPosterObject poster;
+            
+            try
+            {
+                poster = CustomPosterObject.CreateInstance(name, this, tex, overlay, properties);
+            }
+            catch (Exception e)
+            {
+                if (tex)
+                    UnityEngine.Object.Destroy(tex);
+
+                CustomPostersPlugin.Log.LogError($"{packName}: Poster \"{name}\" could not load! See exception below:");
+                CustomPostersPlugin.Log.LogError(e);
+                return;
+            }
+
+            posters.Add(poster);
+
+            WeightedCustomPoster weighted = new WeightedCustomPoster(poster);
+
+            switch (poster.spawnMode)
+            {
+                case PosterSpawnMode.Global:
+                    globalPosters.Add(weighted);
+                    break;
+                case PosterSpawnMode.Room:
+                    AddPosterIntoMode(poster, weighted, roomPosters, false);
+                    break;
+                case PosterSpawnMode.Chalkboard:
+                    AddPosterIntoMode(poster, weighted, chalkboardPosters, true);
+                    break;
             }
         }
 
@@ -179,7 +230,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 _posters.Add(weighted);
             }
         }
-        
+
         private bool TryUpdateMetadata(string json, out Exception exception)
         {
             PosterPackMetadata newMeta = new PosterPackMetadata();
@@ -219,9 +270,9 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
         public List<WeightedCustomPoster> globalPosters = new List<WeightedCustomPoster>();
         public Dictionary<RoomCategory, List<WeightedCustomPoster>> roomPosters = new Dictionary<RoomCategory, List<WeightedCustomPoster>>();
-        public Dictionary<RoomCategory,List<WeightedCustomPoster>> chalkboardPosters = new Dictionary<RoomCategory, List<WeightedCustomPoster>>();
+        public Dictionary<RoomCategory, List<WeightedCustomPoster>> chalkboardPosters = new Dictionary<RoomCategory, List<WeightedCustomPoster>>();
 
-        public int DefaultWeight => metadata.defaultWeight > 0 ? metadata.defaultWeight : CustomPostersPlugin.config_defaultWeight.Value; // TODO: Simplify
+        public int DefaultWeight => metadata.defaultWeight > 0 ? metadata.defaultWeight : CustomPostersConfig.defaultWeight.Value; // TODO: Simplify
 
         public bool Enabled => true;
     }
@@ -235,7 +286,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
     public struct PosterPackBlueprint
     {
-        public PosterPackBlueprint(PluginInfo pluginInfo, PosterPackType type, string name, string path, bool autoCreateDir = false, PosterPackMetadata meta = null)
+        internal PosterPackBlueprint(PluginInfo pluginInfo, PosterPackType type, string name, string path, bool autoCreateDir = false, PosterPackMetadata meta = null)
         {
             this.pluginInfo = pluginInfo;
             this.type = type;
@@ -245,7 +296,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             this.meta = meta;
         }
 
-        public PosterPackBlueprint(PluginInfo pluginInfo, string path, int defaultWeight)
+        internal PosterPackBlueprint(PluginInfo pluginInfo, string path, int defaultWeight)
         {
             this.pluginInfo = pluginInfo;
             this.type = PosterPackType.Mod;
@@ -272,7 +323,8 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
     public class PosterPackMetadata
     {
-        [JsonRequired] public byte packVersion = 0; // There will NEVER be more than 255 pack versions
+        [JsonIgnore] public const byte currentPackVersion = 1;
+        [JsonRequired] public byte packVersion = currentPackVersion; // There will NEVER be more than 255 pack versions
 
         public string credits = "None";
         public string description = "No description set.";

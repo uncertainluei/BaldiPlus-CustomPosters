@@ -1,0 +1,11 @@
+{
+	"preset": "BaldiSays",
+    "posterWeight": 5,
+	"spawnMode": "Room",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "i don't play crash bandicoot game",
+		}
+	]
+}

@@ -1,0 +1,11 @@
+{
+	"preset": "BaldiSays",
+    "posterWeight": 2,
+	"spawnMode": "Room",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "Man Meme!"
+		}
+	]
+}

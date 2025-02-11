@@ -1,0 +1,10 @@
+{
+	"preset": "BaldiSays",
+	"spawnMode": "Room",
+	"targetRooms": ["Faculty"],
+	"textData":[
+		{
+			"textKey": "Vfx_PRI_NoFaculty",
+		}
+	]
+}

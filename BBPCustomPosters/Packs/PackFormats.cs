@@ -9,23 +9,22 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
 {
     public static class PackFormatReader
     {
-        private static Dictionary<PluginInfo, List<Action<string, string>>> readChecks = new Dictionary<PluginInfo, List<Action<string, string>>>();
-        public static void AddReadCheck(PluginInfo plugin, Action<string, string> action)
+        public delegate PackFormat ReadCheck(string path, string ext);
+
+        private static Dictionary<PluginInfo, List<ReadCheck>> readChecks = new Dictionary<PluginInfo, List<ReadCheck>>();
+        public static void AddReadCheck(PluginInfo plugin, ReadCheck function)
         {
             if (plugin == null)
                 throw new NullReferenceException("'plugin' is null!");
-            if (action == null)
-                throw new NullReferenceException("'action' is null!");
+            if (function == null)
+                throw new NullReferenceException("'function' is null!");
 
-            List<Action<string, string>> actions;
-
-            if (!readChecks.TryGetValue(plugin, out actions))
+            if (!readChecks.TryGetValue(plugin, out List<ReadCheck> functions))
             {
-                actions = new List<Action<string, string>>();
-                readChecks.Add(plugin, actions);
+                functions = new List<ReadCheck>();
+                readChecks.Add(plugin, functions);
             }
-
-            actions.Add(action);
+            functions.Add(function);
         }
 
         public static bool TryGrabFormat(string path, out PackFormat output)
@@ -36,31 +35,46 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
         public static bool TryGrabFormat(string path, string extension, out PackFormat output)
         {
             output = null;
-            outputFormat = null;
 
-            foreach (List<Action<string, string>> actions in readChecks.Values)
-                foreach (Action<string,string> action in actions)
+            foreach (List<ReadCheck> actions in readChecks.Values)
+                foreach (ReadCheck action in actions)
                 {
-                    action.Invoke(path, extension);
-                    if (outputFormat != null)
-                    {
-                        output = outputFormat;
+                    output = action.Invoke(path, extension);
+                    if (output != null)
                         return true;
-                    }
                 }
 
             return false;
         }
 
-        private static PackFormat outputFormat;
-
-        public static PackFormat Result
+        internal static void InitReadChecks(PluginInfo plugin)
         {
-            set
+            // Local file paths
+            PackFormatReader.AddReadCheck(plugin, (string path, string ext) =>
             {
-                if (outputFormat == null)
-                    outputFormat = value;
-            }
+                if (!Directory.Exists(path))
+                    return null;
+
+                return new LocalPackFormat(path);
+            });
+
+            // .ZIP archives
+            PackFormatReader.AddReadCheck(plugin, (string path, string ext) =>
+            {
+                if (ext != ".zip") return null;
+
+                ZipArchive archive;
+                try
+                {
+                    archive = ZipFile.OpenRead(path);
+                }
+                catch
+                {
+                    return null;
+                }
+
+                return new ZipPackFormat(path, archive);
+            });
         }
     }
 
@@ -134,6 +148,12 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
                 return null;
 
             return new LocalFileEntry(fullPath, path);
+        }
+
+        public override void Reload()
+        {
+            _entries?.Clear();
+            base.Reload();
         }
     }
 
@@ -236,6 +256,57 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
         public override byte[] ReadAllBytes()
         {
             return entry.ReadAllBytes();
+        }
+    }
+
+    public static class ZipExtensions
+    {
+        private static Texture2D errorPlaceholder;
+
+        // This does not use the API equivalent as it requires a file input to be provided
+        public static bool TryCreateTexture(this byte[] bytes, string name, out Texture2D outputTexture)
+        {
+            if (errorPlaceholder == null)
+            {
+                errorPlaceholder = new Texture2D(1, 1, TextureFormat.ARGB32, false)
+                {
+                    filterMode = FilterMode.Point,
+                    name = "ErrorQuestionMark"
+                };
+
+                // Load an invalid texture
+                errorPlaceholder.LoadImage(new byte[0]);
+            }
+
+            outputTexture = new Texture2D(1, 1, TextureFormat.ARGB32, false)
+            {
+                filterMode = FilterMode.Point,
+                name = Path.GetFileNameWithoutExtension(name)
+            };
+
+            if (!outputTexture.LoadImage(bytes) || outputTexture.GetPixels() == errorPlaceholder.GetPixels())
+            {
+                UnityEngine.Object.Destroy(outputTexture);
+                return false;
+            }
+            return true;
+        }
+
+        public static byte[] ReadAllBytes(this ZipArchiveEntry entry)
+        {
+            using (Stream openedStream = entry.Open())
+            using (MemoryStream ms = new MemoryStream())
+            {
+                openedStream.CopyTo(ms);
+                return ms.ToArray();
+            }
+        }
+
+        public static string ReadAllText(this ZipArchiveEntry entry)
+        {
+            using (Stream openedStream = entry.Open())
+            using (StreamReader sr = new StreamReader(openedStream))
+                return sr.ReadToEnd();
         }
     }
 }

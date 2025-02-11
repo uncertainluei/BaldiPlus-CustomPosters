@@ -1,0 +1,11 @@
+{
+	"preset": "Chalkboard",
+    "posterWeight": 60,
+	"spawnMode": "Chalkboard",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "Doug, dab again\nand pay.",
+		}
+	]
+}

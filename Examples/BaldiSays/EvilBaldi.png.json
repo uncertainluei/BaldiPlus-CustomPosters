@@ -1,0 +1,14 @@
+{
+	"preset": "BaldiSays",
+    "posterWeight": 10,
+	"spawnMode": "Room",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "NO",
+			"fontSize": 36,
+			"font": "COMIC_36_Pro",
+			"bold": true
+		}
+	]
+}

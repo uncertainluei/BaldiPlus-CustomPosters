@@ -1,0 +1,10 @@
+{
+	"preset": "Chalkboard",
+    "posterWeight": 40,
+	"spawnMode": "Chalkboard",
+	"textData":[
+		{
+			"textKey": "Place lore here",
+		}
+	]
+}

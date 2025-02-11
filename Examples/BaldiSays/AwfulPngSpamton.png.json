@@ -1,0 +1,11 @@
+{
+	"preset": "BaldiSays",
+    "posterWeight": 1,
+	"spawnMode": "Room",
+	"targetRooms": ["Class"],
+	"textData":[
+		{
+			"textKey": "FREE $50 STEAM\nGIFT CARD\nYES! D"
+		}
+	]
+}

@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 
@@ -7,17 +8,19 @@ using HarmonyLib;
 using MTM101BaldAPI;
 using MTM101BaldAPI.AssetTools;
 using MTM101BaldAPI.Registers;
+
 using Newtonsoft.Json;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text.Json.Nodes;
+
 using TMPro;
 
 using UncertainLuei.BaldiPlus.CustomPosters.Packs;
+using UncertainLuei.BaldiPlus.CustomPosters.Compatibility;
 
 using UnityEngine;
 
@@ -25,21 +28,20 @@ using UnityEngine;
 namespace UncertainLuei.BaldiPlus.CustomPosters
 {
     [BepInPlugin(ModGuid, "Custom Posters", ModVersion)]
-    [BepInDependency("mtm101.rulerp.bbplus.baldidevapi", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("mtm101.rulerp.bbplus.baldidevapi")]
+    [BepInDependency("blayms.tbb.baldiplus.betterchkfont", BepInDependency.DependencyFlags.SoftDependency)]
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.uncertainluei.baldiplus.customposters";
-        public const string ModVersion = "2024.3.2";
+        public const string ModVersion = "2025.1";
 
         internal static ManualLogSource Log;
 
         // POSTER VARIABLES
-        private static List<PosterPackBlueprint> posterPackBlueprints = new List<PosterPackBlueprint>();
+        private static readonly List<PosterPackBlueprint> posterPackBlueprints = new List<PosterPackBlueprint>();
 
         internal static Dictionary<string, PosterPack> posterPacks = new Dictionary<string, PosterPack>();
         internal static List<PosterPack> activePosterPacks = new List<PosterPack>();
-
-        private static Dictionary<string, int> posterDiffs = new Dictionary<string, int>();
 
         private string currentFloorName;
         private int currentFloorId;
@@ -49,22 +51,12 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
         internal static Dictionary<string, TMP_FontAsset> fontAssets = new Dictionary<string, TMP_FontAsset>();
 
-        // CONFIGURATION
-        internal static ConfigEntry<int> config_defaultWeight;
-
-        internal static ConfigEntry<string> config_foreignPosterBlacklist;
-        internal static string[] blacklistedPostersRaw;
-        internal static ConfigEntry<bool> config_invertForeignPosterBlacklist;
-
-        internal static ConfigEntry<bool> config_logAllPosters;
-
         void Awake()
         {
             Log = Logger;
 
-            InitConfigValues();
-            InitDefaultReadChecks();
-
+            CustomPostersConfig.BindConfig(Config);
+            PackFormatReader.InitReadChecks(Info);
 
             // Add personal pack
             posterPackBlueprints.Add(new PosterPackBlueprint(
@@ -91,71 +83,30 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 }));
             }
 
+            // Better Chalk Font compat
+            bool chalkCompat = Chainloader.PluginInfos.ContainsKey(ChalkFontCompat.ModGuid);
+
+            if (chalkCompat)
+                ChalkFontCompat.Initialize();
+
             // Before generator management events
-            LoadingEvents.RegisterOnAssetsLoaded(Info, GrabTmpFonts(), false);
+            LoadingEvents.RegisterOnAssetsLoaded(Info, GrabTmpFonts(chalkCompat), false);
+            LoadingEvents.RegisterOnAssetsLoaded(Info, PosterPresetStorage.AddPresets(), false);
+            LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterEnumExts(), false);
             LoadingEvents.RegisterOnAssetsLoaded(Info, LoadPosterPacks(true), false);
 
             GeneratorManagement.Register(this, GenerationModType.Addend, OnGeneratorAddend);
             GeneratorManagement.Register(this, GenerationModType.Finalizer, OnGeneratorFinalizer);
 
+            // This is loaded after the generator actions
+            LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterExtendedRooms(), true);
+
             new Harmony(ModGuid).PatchAllConditionals();
         }
-        void InitConfigValues()
+        
+        public void StartReloadPacks()
         {
-            config_defaultWeight = Config.Bind(
-                "General",
-                "DefaultWeight",
-                50,
-                "Default poster weight if variable weight is not set.");
-
-            config_foreignPosterBlacklist = Config.Bind("Foreign Posters",
-                "Blacklist",
-                "",
-                "(Names separated by commas) List of non-user-generated posters that should not be generated.");
-            config_invertForeignPosterBlacklist = Config.Bind("Foreign Posters",
-                "InvertBlacklist",
-                false,
-                "If true, the blacklist above becomes a whitelist and only non-user-generated posters listed above can spawn.");
-
-            blacklistedPostersRaw = config_foreignPosterBlacklist.Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-            // Ensure all split values are trimmed to remove leading spaces
-            for (int i = 0; i < blacklistedPostersRaw.Length; i++)
-                blacklistedPostersRaw[i] = blacklistedPostersRaw[i].Trim();
-
-            config_logAllPosters = Config.Bind(
-                "Debug",
-                "LogAllPosters",
-                false,
-                "Logs all available posters in every random floor setting.");
-        }
-
-        void InitDefaultReadChecks()
-        {
-            // Local file paths
-            PackFormatReader.AddReadCheck(Info, (string path, string ext) =>
-            {
-                if (Directory.Exists(path))
-                    PackFormatReader.Result = new LocalPackFormat(path);
-            });
-
-            // .ZIP archives
-            PackFormatReader.AddReadCheck(Info, (string path, string ext) =>
-            {
-                if (ext != ".zip") return;
-
-                ZipArchive archive;
-                try
-                {
-                    archive = ZipFile.OpenRead(path);
-                }
-                catch
-                {
-                    return;
-                }
-
-                PackFormatReader.Result = new ZipPackFormat(path, archive);
-            });
+            StartCoroutine(ReloadAllPacks());
         }
 
         public IEnumerator ReloadAllPacks()
@@ -175,15 +126,14 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             yield break;
         }
 
-        private IEnumerator GrabTmpFonts()
+        private IEnumerator GrabTmpFonts(bool chalkCompat)
         {
             TMP_FontAsset[] assets = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
-
             yield return assets.Length;
 
             foreach (TMP_FontAsset font in assets)
             {
-                yield return $"Grabbing TMP font \"{font.name}\"";
+                yield return $"Grabbing font \"{font.name}\"";
 
                 if (fontAssets.ContainsKey(font.name))
                 {
@@ -193,12 +143,21 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 fontAssets.Add(font.name, font);
             }
 
+            if (!chalkCompat)
+            {
+                yield return "Fallbacking chalkboard fonts";
+                fontAssets.Add("BaldChalkFont_12_Smooth", fontAssets["COMIC_12_Smooth_Pro"]);
+                fontAssets.Add("BaldChalkFont_18_Smooth", fontAssets["COMIC_18_Smooth_Pro"]);
+                fontAssets.Add("BaldChalkFont_24_Smooth", fontAssets["COMIC_24_Smooth_Pro"]);
+                fontAssets.Add("BaldChalkFont_36_Smooth", fontAssets["COMIC_36_Smooth_Pro"]);
+            }
+
             yield break;
         }
 
         private IEnumerator LoadPosterPacks(bool init = false)
         {
-            // Make it where if any mod tries to add posters after post asset load
+            // Indicate the beginning of the loading process
             loaded = true;
 
             PosterPack newPack;
@@ -226,6 +185,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                         posterPacks.Remove(pack);
                     }
                 }
+                GC.Collect();
             }
 
             foreach (PosterPackBlueprint temp in posterPackBlueprints)
@@ -242,7 +202,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                     }
                     catch (Exception e)
                     {
-                        MTM101BaldiDevAPI.CauseCrash(Info, e);
+                        MTM101BaldiDevAPI.CauseCrash(Info, new Exception($"Could not load \"{temp.name}\"! Stack trace: {e}"));
                     }
                 }
 
@@ -283,11 +243,6 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             currentFloorId = id;
             currentFloorFinalized = false;
 
-            // Cache level title and num for compatibility with mods that invoke generator events on the generator itself
-            RoomPlacementPatch.cached = true;
-            RoomPlacementPatch.cachedLevelTitle = name;
-            RoomPlacementPatch.cachedLevelNum = id;
-
             LevelObject lvl = scene.levelObject;
 
             // If there aren't any posters in the map, don't add them
@@ -317,20 +272,16 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             if (currentFloorFinalized) return;
             currentFloorFinalized = true;
 
-            string fixedName = (name == "INF") ? (name + id) : name; // Infinite Floors support
-
             // Remove blacklisted posters from the generator
             LevelObject lvl = scene.levelObject;
             List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(lvl.posters);
-            currentPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted());
+            currentPosters.RemoveAll(x => x.selection == null || x.IsBlacklisted());
             lvl.posters = currentPosters.ToArray();
 
             //TODO: Rework logallposters
-
-            if (config_logAllPosters.Value)
+            if (CustomPostersConfig.logGeneratorPosters.Value)
             {
                 Logger.LogInfo($"Floor \"{name}\", ID {id}");
-                Logger.LogInfo($"(Reference name \"{fixedName}\"):");
                 foreach (WeightedPosterObject poster in lvl.posters)
                     Logger.LogInfo($" - \"{poster.selection.name}\" ({poster.GetSource()}, Weight: {poster.weight})");
 
@@ -442,9 +393,9 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
                                 alignment = y.alignment.ToString(),
 
-                                bold = y.style == FontStyles.Bold,
-                                italic = y.style == FontStyles.Italic,
-                                underline = y.style == FontStyles.Underline,
+                                bold = y.style.HasFlag(FontStyles.Bold),
+                                italic = y.style.HasFlag(FontStyles.Italic),
+                                underline = y.style.HasFlag(FontStyles.Underline),
 
                                 color = ColorUtility.ToHtmlStringRGB(y.color),
 
@@ -496,83 +447,6 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                     textData = customTextData.ToArray()
                 }, Formatting.Indented));
             });
-        }
-    }
-
-    [HarmonyPatch(typeof(TextTextureGenerator))]
-    [HarmonyPatch("GenerateTextTexture")]
-    internal class TextTexturePatch
-    {
-        static void Postfix(Texture2D __result, PosterObject poster)
-        {
-            __result.name = poster.name + "_WithText";
-        }
-    }
-
-    [HarmonyPatch(typeof(LevelBuilder))]
-    [HarmonyPatch("StartGenerate")]
-    [HarmonyPriority(600)]
-    internal class HandleLevelCacheOnGenerate
-    {
-        private static void Postfix(LevelBuilder __instance)
-        {
-            RoomPlacementPatch.cached = false;
-            __instance.StartCoroutine(DecacheWhenDone(__instance));
-        }
-
-        private static IEnumerator DecacheWhenDone(LevelBuilder lb)
-        {
-            yield return new WaitWhile(() => lb.levelInProgress);
-            RoomPlacementPatch.cached = false;
-            yield break;
-        }
-    }
-
-    [HarmonyPatch(typeof(LevelBuilder))]
-    [HarmonyPatch("LoadRoom")]
-    internal class RoomPlacementPatch
-    {
-        public static bool cached;
-
-        public static string cachedLevelTitle;
-        public static int cachedLevelNum;
-
-        private static void Postfix(RoomController __result)
-        {
-            string lvl = cached ? cachedLevelTitle : CoreGameManager.Instance.sceneObject.levelTitle;
-            int num = cached ? cachedLevelNum : CoreGameManager.Instance.sceneObject.levelNo;
-
-            foreach (PosterPack pack in CustomPostersPlugin.activePosterPacks)
-                if (pack.roomPosters.TryGetValue(__result.category, out List<WeightedCustomPoster> _posters))
-                    __result.potentialPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(lvl, num)));
-
-            __result.potentialPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted() || x.selection == null);
-        }
-    }
-    
-    [HarmonyPatch(typeof(ChalkboardBuilderFunction))]
-    [HarmonyPatch("Build")]
-    internal class ChalkboardBuilderPatch
-    {
-        private static bool Prefix(ChalkboardBuilderFunction __instance, ref WeightedPosterObject[] ___chalkBoards)
-        {
-            string lvl = RoomPlacementPatch.cached ? RoomPlacementPatch.cachedLevelTitle : CoreGameManager.Instance.sceneObject.levelTitle;
-            int num = RoomPlacementPatch.cached ? RoomPlacementPatch.cachedLevelNum : CoreGameManager.Instance.sceneObject.levelNo;
-
-            List<WeightedPosterObject> weightedPosters = new List<WeightedPosterObject>(___chalkBoards);
-
-            foreach (PosterPack pack in CustomPostersPlugin.activePosterPacks)
-            {
-                if (pack.chalkboardPosters.TryGetValue(RoomCategory.Null, out List<WeightedCustomPoster> _posters))
-                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(lvl, num)));
-                if (pack.chalkboardPosters.TryGetValue(__instance.room.category, out _posters))
-                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(lvl, num)));
-            }
-
-            weightedPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted() || x.selection == null);
-            ___chalkBoards = weightedPosters.ToArray();
-
-            return ___chalkBoards.Length > 0;
         }
     }
 }
