@@ -1,11 +1,15 @@
 ﻿using BepInEx;
+
 using Newtonsoft.Json;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
-using UncertainLuei.BaldiPlus.CustomPosters.Packs;
 using System.Linq;
+
+using UncertainLuei.BaldiPlus.CustomPosters.Packs;
+
+using UnityEngine;
 
 namespace UncertainLuei.BaldiPlus.CustomPosters
 {
@@ -82,6 +86,12 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 if (!TryUpdateMetadata(fileEntry.ReadAllText(), out Exception e))
                 {
                     CustomPostersPlugin.Log.LogWarning($"{packName}: Pack metadata file (pack.json) does not seem to be valid! Exception trace: {e}");
+                    Dispose();
+                    return;
+                }
+                if (metadata.packVersion > PosterPackMetadata.currentPackVersion)
+                {
+                    CustomPostersPlugin.Log.LogWarning($"{packName}: Pack (version {metadata.packVersion}) is incompatible with this version of the mod (pack version {PosterPackMetadata.currentPackVersion})!");
                     Dispose();
                     return;
                 }
@@ -323,7 +333,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
     public class PosterPackMetadata
     {
-        [JsonIgnore] public const byte currentPackVersion = 1;
+        [JsonIgnore] public const byte currentPackVersion = 2;
         [JsonRequired] public byte packVersion = currentPackVersion; // There will NEVER be more than 255 pack versions
 
         public string credits = "None";

@@ -8,13 +8,14 @@ using HarmonyLib;
 
 using MTM101BaldAPI;
 using MTM101BaldAPI.Registers;
-using System;
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Emit;
+
 using TMPro;
+
 using UnityEngine;
 
 namespace UncertainLuei.BaldiPlus.CustomPosters.Compatibility
@@ -86,35 +87,39 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Compatibility.Patches
     [HarmonyPatch(typeof(TextTextureGenerator_LoadPosterData), "Postfix")]
     public class ChalkTextPatch
     {
-        private static List<string> textToRestore = new List<string>(); 
+        private static List<string> textToRestore = new List<string>();
 
         private static bool Prefix(object[] __args, PosterObject poster)
         {
-
             textToRestore.Clear();
             if (poster.GetInstanceID() >= 0 && poster.name.StartsWith("Chk") && poster.textData.Length > 0) return true;
 
             TextTextureGenerator instance = (TextTextureGenerator)__args[0];
 
-            bool result = true;
-            foreach (TMP_Text text in instance.textureTMPPre)
+            int length = instance.textureTMPPre.Length, baldFonts = 0;
+            for (int i = 0; i < length; i++)
             {
-                if (text.font.name.StartsWith("BaldChalkFont"))
+                if (instance.textureTMPPre[i].font.name.StartsWith("BaldChalkFont"))
                 {
+                    baldFonts++;
                     textToRestore.Add("");
                     continue;
                 }
-                result = false;
-                textToRestore.Add(text.text);
+                textToRestore.Add(instance.textureTMPPre[i].text);
             }
-            return result;
+
+            if (baldFonts > 0 && baldFonts < length)
+                return true;
+
+            textToRestore.Clear();
+            return baldFonts > 0;
         }
 
         private static void Postfix(object[] __args)
         {
             TextTextureGenerator instance = (TextTextureGenerator)__args[0];
-            int i = 0, length = textToRestore.Count;
-            for (; i < length; i++)
+            int length = textToRestore.Count;
+            for (int i = 0; i < length; i++)
             {
                 if (!textToRestore[i].IsNullOrWhiteSpace())
                     instance.textureTMPPre[i].text = textToRestore[i];

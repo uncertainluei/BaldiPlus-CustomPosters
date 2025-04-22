@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
-using BepInEx.Configuration;
 using BepInEx.Logging;
 
 using HarmonyLib;
@@ -33,7 +32,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.uncertainluei.baldiplus.customposters";
-        public const string ModVersion = "2025.1";
+        public const string ModVersion = "2025.2";
 
         internal static ManualLogSource Log;
 
@@ -69,23 +68,8 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                     defaultWeight = 0
                 }));
 
-            // Legacy personal pack for backwards compat
-            string legacyPath = Path.Combine(Application.streamingAssetsPath, "Modded", "io.github.luisrandomness.bbp_custom_posters", "Posters");
-            if (Directory.Exists(legacyPath))
-            {
-                posterPackBlueprints.Add(new PosterPackBlueprint(
-                Info, PosterPackType.Personal, "Personal_Legacy", legacyPath,
-                false, new PosterPackMetadata()
-                {
-                    credits = "Player",
-                    description = "Personal poster pack, for added posters before v2024.3.2",
-                    defaultWeight = 0
-                }));
-            }
-
             // Better Chalk Font compat
             bool chalkCompat = Chainloader.PluginInfos.ContainsKey(ChalkFontCompat.ModGuid);
-
             if (chalkCompat)
                 ChalkFontCompat.Initialize();
 
@@ -118,7 +102,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             }
 
             // Force-updates all SceneObjects
-            foreach (SceneObject scene in Resources.FindObjectsOfTypeAll<SceneObject>().Where(x => x.levelObject != null).ToArray())
+            foreach (SceneObject scene in Resources.FindObjectsOfTypeAll<SceneObject>().Where(x => x.levelObject != null))
             {
                 OnGeneratorAddend(scene.levelTitle, scene.levelNo, scene);
                 OnGeneratorFinalizer(scene.levelTitle, scene.levelNo, scene);
@@ -151,7 +135,6 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 fontAssets.Add("BaldChalkFont_24_Smooth", fontAssets["COMIC_24_Smooth_Pro"]);
                 fontAssets.Add("BaldChalkFont_36_Smooth", fontAssets["COMIC_36_Smooth_Pro"]);
             }
-
             yield break;
         }
 
@@ -235,7 +218,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             yield break;
         }
 
-        void OnGeneratorAddend(string name, int id, SceneObject scene)
+        private void OnGeneratorAddend(string name, int id, SceneObject scene)
         {
             if (name == currentFloorName && id == currentFloorId) return;
 
@@ -243,9 +226,13 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             currentFloorId = id;
             currentFloorFinalized = false;
 
-            LevelObject lvl = scene.levelObject;
+            foreach (LevelObject lvl in scene.GetCustomLevelObjects())
+                OnGeneratorAddendLvl(name, lvl);
+        }
 
-            // If there aren't any posters in the map, don't add them
+        private void OnGeneratorAddendLvl(string name, LevelObject lvl)
+        {
+            // If there aren't any posters in the level, don't add them
             if (lvl.posters.Length > 0)
             {
                 List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(lvl.posters);
@@ -253,7 +240,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 {
                     foreach (WeightedCustomPoster poster in pack.globalPosters)
                     {
-                        if (poster.IncludeInLevel(name, id))
+                        if (poster.IncludeInLevel(name, lvl.type))
                         {
                             if (!currentPosters.Contains(poster))
                                 currentPosters.Add(poster);
@@ -272,16 +259,26 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             if (currentFloorFinalized) return;
             currentFloorFinalized = true;
 
+            if (CustomPostersConfig.logGeneratorPosters.Value)
+                Logger.LogInfo($"SceneObject \"{name}\", ID {id}");
+
+            foreach (LevelObject lvl in scene.GetCustomLevelObjects())
+                OnGeneratorFinalizerLvl(lvl);
+
+            if (CustomPostersConfig.logGeneratorPosters.Value)
+                Logger.LogInfo("");
+        }
+
+        private void OnGeneratorFinalizerLvl(LevelObject lvl)
+        {
             // Remove blacklisted posters from the generator
-            LevelObject lvl = scene.levelObject;
             List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(lvl.posters);
             currentPosters.RemoveAll(x => x.selection == null || x.IsBlacklisted());
             lvl.posters = currentPosters.ToArray();
 
-            //TODO: Rework logallposters
             if (CustomPostersConfig.logGeneratorPosters.Value)
             {
-                Logger.LogInfo($"Floor \"{name}\", ID {id}");
+                Logger.LogInfo($" LevelObject \"{lvl.name}\", type {lvl.type.ToStringExtended()}");
                 foreach (WeightedPosterObject poster in lvl.posters)
                     Logger.LogInfo($" - \"{poster.selection.name}\" ({poster.GetSource()}, Weight: {poster.weight})");
 

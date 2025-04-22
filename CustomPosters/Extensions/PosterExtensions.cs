@@ -1,6 +1,5 @@
 ﻿using MTM101BaldAPI;
 using MTM101BaldAPI.PlusExtensions;
-using Newtonsoft.Json;
 
 using System;
 using System.Collections.Generic;
@@ -28,12 +27,10 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
         
         public CustomPosterObject customPoster;
 
-        public bool IncludeInLevel(string lvl, int id)
+        public bool IncludeInLevel(string lvl, LevelType type)
         {
-            // Include IF either the whitelist is empty OR the level obeys the white/blacklist
-            return customPoster.IncludeInLevel(lvl, id);
+            return customPoster.IncludeInLevel(lvl, type);
         }
-
     }
 
     public class CustomPosterObject : ExtendedPosterObject
@@ -84,35 +81,26 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             poster.weight = properties.posterWeight;
 
             poster.spawnMode = PosterSpawnMode.Global;
-            Enum.TryParse(properties.spawnMode, true, out poster.spawnMode);
+            if (Enum.TryParse(properties.spawnMode, true, out PosterSpawnMode newMode))
+                poster.spawnMode = newMode;
 
-            poster.levelWhitelist = properties.levelWhitelist;
-            poster.reverseWhitelist = properties.reverseWhitelist;
+            poster.lvlTitleWhitelist = properties.lvlTitleWhitelist;
+            poster.reverseTitleWhitelist = properties.reverseTitleWhitelist;
+
+            poster.lvlTypeWhitelist = properties.lvlTypeWhitelist.ToEnumArray<LevelType>();
+            poster.reverseTypeWhitelist = properties.reverseTypeWhitelist;
+
+            if (properties.levelWhitelist?.Length > 0)
+            {
+                CustomPostersPlugin.Log.LogWarning($"{pack.packName}: Poster \"{name}\" is using legacy property 'levelWhitelist', which will be removed next update! Please use 'lvlTitleWhitelist' and 'reverseTitleWhitelist' instead!");
+                poster.lvlTitleWhitelist = properties.levelWhitelist;
+                poster.reverseTitleWhitelist = properties.reverseWhitelist;
+            }
 
             if (poster.spawnMode == PosterSpawnMode.Global || properties.targetRooms.Length == 0)
-            {
                 poster.targetRooms = new RoomCategory[0];
-            }
             else
-            {
-                List<RoomCategory> roomCats = new List<RoomCategory>();
-                RoomCategory cat;
-                foreach (string target in properties.targetRooms)
-                {
-                    try
-                    {
-                        cat = EnumExtensions.GetFromExtendedName<RoomCategory>(target);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    if (!roomCats.Contains(cat))
-                        roomCats.Add(cat);
-                }
-                poster.targetRooms = roomCats.ToArray();
-            }
+                poster.targetRooms = properties.targetRooms.ToEnumArray<RoomCategory>();
 
             // Multi-poster conversion
             if (length > 1)
@@ -200,12 +188,13 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 Destroy(overlayData[0].texture);
         }
 
-        public bool IncludeInLevel(string lvl, int id)
+        public bool IncludeInLevel(string name, LevelType type)
         {
             if (!pack.Enabled) return false;
-            if (levelWhitelist.Length == 0) return true;
 
-            return levelWhitelist.Contains(lvl) != reverseWhitelist;
+            // Include IF either the whitelist is empty OR the level obeys the white/blacklists
+            return (lvlTitleWhitelist.Length == 0 || lvlTitleWhitelist.Contains(name) != reverseTitleWhitelist) &&
+                (lvlTypeWhitelist.Length == 0 || lvlTypeWhitelist.Contains(type));
         }
 
         public PosterPack pack;
@@ -213,8 +202,11 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
         private bool providesTexture;
         private bool providesOverlay;
 
-        private string[] levelWhitelist;
-        private bool reverseWhitelist;
+        private string[] lvlTitleWhitelist;
+        private bool reverseTitleWhitelist;
+
+        private LevelType[] lvlTypeWhitelist;
+        private bool reverseTypeWhitelist;
 
         public RoomCategory[] targetRooms;
         public PosterSpawnMode spawnMode;

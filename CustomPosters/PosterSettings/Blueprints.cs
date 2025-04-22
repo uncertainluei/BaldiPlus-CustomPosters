@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using Newtonsoft.Json;
 
 using UnityEngine;
 
@@ -18,6 +19,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
     public class PosterTextSettings
     {
+
         [JsonIgnore] public static readonly PosterTextSettings defaultSettings = new PosterTextSettings();
 
         public string textKey = "pst_key";
@@ -47,28 +49,35 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
         [Range(0, float.MaxValue)]
         public int posterWeight = 0;
 
-        /* A whitelist indicating which levels will contain the poster.
-         *  Levels are declared via string values.
-         *  If empty, it will spawn in any level.
+        /* A whitelist indicating which scene will contain the poster.
+         * SceneObject titles are declared via string values.
+         * If empty, it will spawn in any level.
         */
-        public string[] levelWhitelist = new string[0];
+        public string[] lvlTitleWhitelist = new string[0];
 
-        // If true, the level whitelist will become a blacklist, and the
-        // poster will be excluded from the floors declared in the list.
-        public bool reverseWhitelist = false;
+        /* If true, the scene whitelist will become a blacklist, and the
+         * poster will be excluded from the floors declared in the list.
+        */
+        public bool reverseTitleWhitelist = false;
+
+        /* Ditto, but for the LevelObject's type.
+         * Reflects the LevelType enum, 
+        */
+        public string[] lvlTypeWhitelist = new string[0];
+        public bool reverseTypeWhitelist = false;
 
         // PosterTextData entries go here
         public PosterTextSettings[] textData = new PosterTextSettings[0];
 
         /* Target room categories that the poster will aim to spawn in.
-         * This reflects the RoomCategory enum, and is compatible with extended categories
+         * This reflects the RoomCategory enum, and is also compatible with extended categories
          * from other mods.
          *
          * Default entries (as of BB+ v0.9 Pre-release 1):
          * Null, Hall, Class, Office, Faculty, Test, FieldTrip, Buffer, Special, Mystery, Store
          * 
          * Additional entries (added by Custom Posters):
-         * Closet, Clinic, Cafeteria, Library
+         * Closet, Clinic, Cafeteria, Library, LightbulbTesting, Wormhole, BeltRoom, Laboratory
         */
         public string[] targetRooms = new string[0];
 
@@ -99,5 +108,10 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
          * Character - Character poster found in the Principal's office
         */
         public string preset = "";
+
+        // LEGACY COMPAT, WILL BE REMOVED NEXT UPDATE!
+        [Obsolete("Please use lvlTitleWhitelist!")] public string[] levelWhitelist = new string[0];
+        [Obsolete("Please use reverseTitleWhitelist!")] public bool reverseWhitelist = false;
+
     }
 }

@@ -1,9 +1,7 @@
 ﻿using HarmonyLib;
 
 using MTM101BaldAPI.Patches;
-using MTM101BaldAPI.PlusExtensions;
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -40,17 +38,20 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Patches
     [HarmonyPatch("LoadRoom", typeof(RoomAsset), typeof(IntVector2), typeof(IntVector2), typeof(Direction), typeof(bool), typeof(Texture2D), typeof(Texture2D), typeof(Texture2D))]
     public class RoomPlacementPatch
     {
-        private static string _lvl;
-        private static int _num;
+        private static string _name;
+        private static LevelType _type;
 
-        private static void Postfix(RoomController __result)
+        private static void Postfix(RoomController __result, LevelObject ___ld)
         {
-            _lvl = CoreGameManager.Instance.sceneObject.levelTitle;
-            _num = CoreGameManager.Instance.sceneObject.levelNo;
+            _name = CoreGameManager.Instance.sceneObject.levelTitle;
+
+            _type = LevelType.Schoolhouse;
+            if (___ld)
+                _type = ___ld.type;
 
             foreach (PosterPack pack in CustomPostersPlugin.activePosterPacks)
                 if (pack.roomPosters.TryGetValue(__result.category, out List<WeightedCustomPoster> _posters))
-                    __result.potentialPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(_lvl, _num)));
+                    __result.potentialPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(_name, _type)));
 
             __result.potentialPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted() || x.selection == null);
         }
@@ -60,22 +61,25 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Patches
     [HarmonyPatch("Build")]
     public class ChalkboardBuilderPatch
     {
-        private static string _lvl;
-        private static int _num;
+        private static string _name;
+        private static LevelType _type;
 
-        private static bool Prefix(ChalkboardBuilderFunction __instance, ref WeightedPosterObject[] ___chalkBoards)
+        private static bool Prefix(ChalkboardBuilderFunction __instance, ref WeightedPosterObject[] ___chalkBoards, LevelBuilder builder)
         {
-            _lvl = CoreGameManager.Instance.sceneObject.levelTitle;
-            _num = CoreGameManager.Instance.sceneObject.levelNo;
+            _name = CoreGameManager.Instance.sceneObject.levelTitle;
+
+            _type = LevelType.Schoolhouse;
+            if (builder.ld)
+                _type = builder.ld.type;
 
             List<WeightedPosterObject> weightedPosters = new List<WeightedPosterObject>(___chalkBoards);
 
             foreach (PosterPack pack in CustomPostersPlugin.activePosterPacks)
             {
                 if (pack.chalkboardPosters.TryGetValue(RoomCategory.Null, out List<WeightedCustomPoster> _posters))
-                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(_lvl, _num)));
+                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(_name, _type)));
                 if (pack.chalkboardPosters.TryGetValue(__instance.room.category, out _posters))
-                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(_lvl, _num)));
+                    weightedPosters.AddRange(_posters.Where((WeightedCustomPoster x) => x.IncludeInLevel(_name, _type)));
             }
 
             weightedPosters.RemoveAll((WeightedPosterObject x) => x.IsBlacklisted() || x.selection == null);

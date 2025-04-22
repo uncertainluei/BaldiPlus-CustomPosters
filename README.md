@@ -19,7 +19,7 @@ Json.NET is bunded with the download, and is [licensed under MIT](https://github
 	- Floors the poster can/cannot appear on, **based on level name**
 	- Poster Text Data (for both single and *'multi'* posters)
 	- The poster's spawning mode, whether it can spawn anywhere, what rooms it can spawn in, or if it spawns as a chalkboard
-	- The preset of the poster, which affects the fallback texture and text data that it'll use.
+	- The preset of the poster, which affects the fallback texture and text data that it'll use
 	- **Examples can be seen in the repository's `Examples` folder.**
 - The following configuration options, **which can be accessed from `[BB+ INSTALL PATH]/BepInEx/config/io.github.uncertainluei.baldiplus.customposters.cfg`**:
 	- Default weight of created posters if not specifically set
