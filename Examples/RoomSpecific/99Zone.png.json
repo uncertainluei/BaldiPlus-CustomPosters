@@ -1,0 +1,20 @@
+{
+	"preset": "zone",
+	"posterWeight": 5,
+	"spawnMode": "Room",
+	"targetRooms": ["Laboratory"],
+	"textData":[
+		{
+			"textKey": "PST_HNT_Zone"
+		},
+		{
+			"textKey": "99"
+		},
+		{
+			"textKey": "99"
+		},
+		{
+			"textKey": "99"
+		}
+	]
+}

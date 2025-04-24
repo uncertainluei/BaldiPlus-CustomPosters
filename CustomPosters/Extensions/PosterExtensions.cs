@@ -194,7 +194,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
 
             // Include IF either the whitelist is empty OR the level obeys the white/blacklists
             return (lvlTitleWhitelist.Length == 0 || lvlTitleWhitelist.Contains(name) != reverseTitleWhitelist) &&
-                (lvlTypeWhitelist.Length == 0 || lvlTypeWhitelist.Contains(type));
+                (lvlTypeWhitelist.Length == 0 || lvlTypeWhitelist.Contains(type) != reverseTypeWhitelist);
         }
 
         public PosterPack pack;

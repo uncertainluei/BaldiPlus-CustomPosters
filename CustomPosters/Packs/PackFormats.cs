@@ -117,7 +117,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
             dirPath = path;
         }
 
-        private string dirPath;
+        private readonly string dirPath;
 
         private List<PackFileEntry> _entries;
 
@@ -169,12 +169,11 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
             name = Path.GetFileNameWithoutExtension(fullName) + Path.GetExtension(fullName);
         }
 
-        private string filePath;
-        private string name;
-        private string fullName;
+        private readonly string filePath;
+        private readonly string name;
+        private readonly string fullName;
 
         public override string Name => name;
-
         public override string FullName => fullName;
 
         public override string ReadAllText()
@@ -196,7 +195,12 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
             zipArchive = archive;
         }
 
-        private string zipPath;
+        ~ZipPackFormat()
+        {
+            zipArchive?.Dispose();
+        }
+
+        private readonly string zipPath;
         private ZipArchive zipArchive;
 
         private List<PackFileEntry> _entries;
@@ -217,9 +221,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
 
         public override void Reload()
         {
-            if (zipArchive != null)
-                zipArchive.Dispose();
-
+            zipArchive?.Dispose();
             zipArchive = ZipFile.OpenRead(zipPath);
             base.Reload();
         }
@@ -241,13 +243,11 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
             name = archiveEntry.Name;
         }
 
-        ZipArchiveEntry entry;
-        
-        private string name;
-        private string fullName;
+        private readonly ZipArchiveEntry entry;
+        private readonly string name;
+        private readonly string fullName;
 
         public override string Name => name;
-
         public override string FullName => fullName;
 
         public override string ReadAllText()

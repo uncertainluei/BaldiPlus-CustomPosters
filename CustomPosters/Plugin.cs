@@ -76,14 +76,19 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             // Before generator management events
             LoadingEvents.RegisterOnAssetsLoaded(Info, GrabTmpFonts(chalkCompat), false);
             LoadingEvents.RegisterOnAssetsLoaded(Info, PosterPresetStorage.AddPresets(), false);
-            LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterEnumExts(), false);
+
+            if (CustomPostersConfig.extendRoomEnums.Value)
+            {
+                LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterEnumExts(), false);
+                LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterExtendedRooms(), true);
+            }
+            
             LoadingEvents.RegisterOnAssetsLoaded(Info, LoadPosterPacks(true), false);
 
             GeneratorManagement.Register(this, GenerationModType.Addend, OnGeneratorAddend);
             GeneratorManagement.Register(this, GenerationModType.Finalizer, OnGeneratorFinalizer);
 
             // This is loaded after the generator actions
-            LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterExtendedRooms(), true);
 
             new Harmony(ModGuid).PatchAllConditionals();
         }

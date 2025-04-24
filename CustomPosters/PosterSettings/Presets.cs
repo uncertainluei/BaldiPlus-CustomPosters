@@ -27,38 +27,42 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
         {
             yield return 1;
             yield return "Adding poster presets";
-            PosterObject[] posters = Resources.FindObjectsOfTypeAll<PosterObject>().Where(x => x.GetInstanceID() >= 0).ToArray();
+            Dictionary<string, PosterObject> posters = Resources.FindObjectsOfTypeAll<PosterObject>().Where(x => x.GetInstanceID() >= 0).ToDictionary(x => x.name, x => x);
 
-            PosterObject posterToCopy = posters.First(x => x.name == "BLT_All");
+            PosterObject posterToCopy = posters["BLT_All"];
             AddPosterPreset("bulletinboard", posterToCopy.textData, posterToCopy.baseTexture);
 
-            posterToCopy = posters.First(x => x.name == "Chk_Apple");
+            posterToCopy = posters["Chk_Apple"];
             AddPosterPreset("chalkboard", posterToCopy.textData, posterToCopy.baseTexture, chalkOverlay);
             AddPosterPreset("chalk_apple", posterToCopy.textData, posterToCopy.baseTexture, chalkOverlay);
 
-            AddPosterPreset("chalk_chalk", posters.First(x => x.name == "Chk_Chalk").textData, posterToCopy.baseTexture, chalkOverlay);
-            AddPosterPreset("chalk_treehint", posters.First(x => x.name == "Chk_TreeHint").textData, posterToCopy.baseTexture, chalkOverlay);
+            AddPosterPreset("chalk_chalk", posters["Chk_Chalk"].textData, posterToCopy.baseTexture, chalkOverlay);
+            AddPosterPreset("chalk_treehint", posters["Chk_TreeHint"].textData, posterToCopy.baseTexture, chalkOverlay);
 
-            posterToCopy = posters.First(x => x.name == "Chk_Possible");
+            posterToCopy = posters["Chk_Possible"];
             AddPosterPreset("chalk_possible", posterToCopy.textData, posterToCopy.baseTexture, chalkOverlay);
 
-            posterToCopy = posters.First(x => x.name == "Chk_BaldiSays");
+            posterToCopy = posters["Chk_BaldiSays"];
             AddPosterPreset("chalk_baldisays", posterToCopy.textData, posterToCopy.baseTexture, chalkOverlay);
 
-            posterToCopy = posters.First(x => x.name == "Chk_Mathh");
+            posterToCopy = posters["Chk_Mathh"];
             AddPosterPreset("chalk_math", posterToCopy.textData, posterToCopy.baseTexture, chalkOverlay);
 
-            posterToCopy = posters.First(x => x.name == "CLS_BaldiSays_1");
+            posterToCopy = posters["CLS_BaldiSays_1"];
             AddPosterPreset("baldisays", posterToCopy.textData, posterToCopy.baseTexture);
 
-            posterToCopy = posters.First(x => x.name == "HNT_Phone");
-            AddPosterPreset("hint", posterToCopy.textData, null);
+            posterToCopy = posters["HNT_Phone"];
+            AddPosterPreset("hint", posterToCopy.textData);
 
-            posterToCopy = posters.First(x => x.name == "HNT_Rules");
+            posterToCopy = posters["HNT_Rules"];
             AddPosterPreset("rules", posterToCopy.textData, posterToCopy.baseTexture);
 
-            posterToCopy = posters.First(x => x.name == "BaldiPoster");
-            AddPosterPreset("character", posterToCopy.textData, null);
+            posterToCopy = posters["BaldiPoster"];
+            AddPosterPreset("character", posterToCopy.textData);
+
+            posterToCopy = posters["LaboratoryZone_1"];
+            AddPosterPreset("zone", posterToCopy.textData);
+            AddPosterPreset("zone_nonum", new PosterTextData[] {posterToCopy.textData[0]});
 
             yield break;
         }

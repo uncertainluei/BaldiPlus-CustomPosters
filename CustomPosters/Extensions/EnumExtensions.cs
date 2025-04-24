@@ -56,13 +56,13 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             NPC drReflex = NPCMetaStorage.Instance.Get(Character.DrReflex).value;
             drReflex.potentialRoomAssets.Do(x => x.selection.category = Clinic);
 
-            RoomAsset[] rooms = Resources.FindObjectsOfTypeAll<RoomAsset>().Where(x => x.category == RoomCategory.Special || x.category == RoomCategory.Null).ToArray();
-            rooms.Where(x => x.name.StartsWith("Room_Cafeteria")).Do(x => x.category = Cafeteria);
-            rooms.Where(x => x.name.StartsWith("Room_Library")).Do(x => x.category = Library);
-            rooms.Where(x => x.name.StartsWith("Room_LightbulbTesting")).Do(x => x.category = LightbulbTesting);
-            rooms.Where(x => x.name.StartsWith("Room_Wormhole")).Do(x => x.category = Wormhole);
-            rooms.Where(x => x.name.StartsWith("Room_BeltRoom")).Do(x => x.category = BeltRoom);
-            rooms.Where(x => x.name.StartsWith("Room_Teleporter")).Do(x => x.category = Laboratory);
+            RoomAsset[] rooms = Resources.FindObjectsOfTypeAll<RoomAsset>().Where(x => (x.category == RoomCategory.Special || x.category == RoomCategory.Null) && x.roomFunctionContainer != null).ToArray();
+            rooms.Where(x => x.roomFunctionContainer.name.StartsWith("Cafeteria")).Do(x => x.category = Cafeteria);
+            rooms.Where(x => x.roomFunctionContainer.name.StartsWith("Library")).Do(x => x.category = Library);
+            rooms.Where(x => x.roomFunctionContainer.name.StartsWith("LightbulbTesting")).Do(x => x.category = LightbulbTesting);
+            rooms.Where(x => x.roomFunctionContainer.name.StartsWith("Wormhole")).Do(x => x.category = Wormhole);
+            rooms.Where(x => x.roomFunctionContainer.name.StartsWith("BeltRoom")).Do(x => x.category = BeltRoom);
+            rooms.Where(x => x.roomFunctionContainer.name.StartsWith("Teleporter")).Do(x => x.category = Laboratory);
             yield break;
         }
 
