@@ -1,14 +1,14 @@
 # BB+ Custom Posters Mod
-![Version](https://img.shields.io/badge/version-2025.1-purple) ![License](https://img.shields.io/badge/license-MIT-blue?link=https://github.com/uncertainluei/BaldiPlus-CustomPosters/blob/main/LICENSE)
-![BB+ version](https://img.shields.io/badge/bb+-0.9-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.23-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-6.2.0.0-69C12E?color=red&link=https://gamebanana.com/mods/383711)
+![Version](https://img.shields.io/badge/version-2025.2-purple) ![GitHub License](https://img.shields.io/github/license/uncertainluei/BaldiPlus-CustomPosters)
+![BB+ version](https://img.shields.io/badge/bb+-0.10-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.23-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-7.0.0.0-69C12E?color=red&link=https://gamebanana.com/mods/383711)
  
-A mod for [*Baldi's Basics Plus v0.9*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of user-provided wall posters.
+A mod for [*Baldi's Basics Plus v0.10*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of user-provided wall posters.
 
-Requires [*BepInEx v5.4.23 and above*](https://github.com/BepInEx/BepInEx/tag/v5.4.23) and [*Baldi's Basics Plus Dev API v6.2.0.0 and above*](https://gamebanana.com/mods/383711).
+Requires [*BepInEx v5.4.23 and above*](https://github.com/BepInEx/BepInEx/tag/v5.4.23) and [*Baldi's Basics Plus Dev API v7.0.0.0 and above*](https://gamebanana.com/mods/383711).
 
 Json.NET is bunded with the download, and is [licensed under MIT](https://github.com/JamesNK/Newtonsoft.Json?tab=MIT-1-ov-file#MIT-1-ov-file).
 
-### Features provided by the mod
+## Mod Features
 - Creation of single-wall posters by providing at least either a **.PNG**/**.JP(E)G** image or a **.JSON** definition file
 	- **Custom posters should be added in `[BB+ INSTALL PATH]/BALDI_Data/StreamingAssets/Modded/io.github.uncertainluei.baldiplus.customposters/Posters`.**
 	- **A definition file is attached to the poster's texture image if it's named after the latter's file name (incl. extension) i.e. `MyPoster.png.json`.**
@@ -16,7 +16,7 @@ Json.NET is bunded with the download, and is [licensed under MIT](https://github
 	- **Other mods can depend on this and have their own poster paths read using the `CustomPostersPlugin.AddBuiltInPackFromMod` and/or '`CustomPostersPlugin.AddBuiltInPackFromDirectory` helper methods.**
 - Setting custom properties to any created poster, such as:
 	- The poster's *'weight'* probability in the generator
-	- Floors the poster can/cannot appear on, **based on level name**
+	- Floors the poster can/cannot appear on, **based on the scene/level title and level object type**
 	- Poster Text Data (for both single and *'multi'* posters)
 	- The poster's spawning mode, whether it can spawn anywhere, what rooms it can spawn in, or if it spawns as a chalkboard
 	- The preset of the poster, which affects the fallback texture and text data that it'll use
@@ -33,11 +33,17 @@ Json.NET is bunded with the download, and is [licensed under MIT](https://github
 - Better configuration system that accepts arrays (maybe)
 - A menu to toggle and reload poster packs (reloading functionality is already in place)
 
-### Screenshots
-*Screenshots are slightly outdated and will eventually be replaced. Some posters (excluding the ones in the first and last screenshots) seen here are not included with the normal download.*
-![Custom Multi-Poster with Text Data](https://i.imgur.com/pOoEoPV.png)
-![Custom Multi-Poster in Classroom](https://i.imgur.com/gGWnWrJ.png)
-![Custom Poster in Library](https://i.imgur.com/1mu1d35.png)
-![Custom Poster in Clinic](https://i.imgur.com/261k0lO.png)
-![Custom Poster in Classroom](https://i.imgur.com/M0u4FBS.png)
-![Custom Multi-Poster in Hall](https://i.imgur.com/7CbzmRg.png)
+## Build Instructions
+This is for building the mod's .DLL and .PDB file, which should be found at the `CustomPosters/bin/Debug*/netstandard2.0/` directory.
+
+\*`Release` if built with the *Release* configuration
+
+### Visual Studio 2022 (.NET)
+Run `CustomPosters.sln` in Visual Studio as a project. Building should then be as simple as going to **Build -> Build Solution** in the menu bar (or pressing Ctrl+Shift+B).
+
+### Terminal
+Make sure you have the [.NET SDK](https://dotnet.microsoft.com/en-us/download) installed. Open your terminal on the cloned/downloaded repository's directory, and execute:
+
+`dotnet build .\CustomPosters.sln`
+
+This will build to the *Debug* configuration by default, append `-c Release` if you want to built it with the *Release* configuration.

@@ -26,7 +26,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 "General",
                 "ExtendRoomEnums",
                 true,
-                "Adds additional room category enum values for special rooms that may lack one. Turn off if you are using a mod");
+                "Adds additional room category enum values for special rooms that may lack one. Turn off if you are having problems with special rooms alongside other mods!");
 
             blacklist = config.Bind(
                 "Foreign Posters",
