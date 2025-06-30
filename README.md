@@ -1,10 +1,10 @@
 # BB+ Custom Posters Mod
-![Version](https://img.shields.io/badge/version-2025.2-purple) ![GitHub License](https://img.shields.io/github/license/uncertainluei/BaldiPlus-CustomPosters)
-![BB+ version](https://img.shields.io/badge/bb+-0.10-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.23-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-7.0.0.0-69C12E?color=red&link=https://gamebanana.com/mods/383711)
+![Version](https://img.shields.io/badge/version-2025.3-purple) ![GitHub License](https://img.shields.io/github/license/uncertainluei/BaldiPlus-CustomPosters)
+![BB+ version](https://img.shields.io/badge/bb+-0.11-69C12E?color=green) ![BepInEx version](https://img.shields.io/badge/bepinex-5.4.23-69C12E?color=yellow&link=https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23) ![Json.NET version](https://img.shields.io/badge/json.net-13.0.3-69C12E?color=orange) ![MTM101BMDE version](https://img.shields.io/badge/mtm101bmde-7.0.1.1-69C12E?color=red&link=https://gamebanana.com/mods/383711)
  
-A mod for [*Baldi's Basics Plus v0.10*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of user-provided wall posters.
+A mod for [*Baldi's Basics Plus v0.11*](https://store.steampowered.com/app/1275890/Baldis_Basics_Plus/), powered by [*BepInEx*](https://github.com/BepInEx/BepInEx), [*Json.NET*](https://github.com/JamesNK/Newtonsoft.Json) and the [*Baldi's Basics Plus Dev API*](https://gamebanana.com/mods/383711), that allows the creation of user-provided wall posters.
 
-Requires [*BepInEx v5.4.23 and above*](https://github.com/BepInEx/BepInEx/tag/v5.4.23) and [*Baldi's Basics Plus Dev API v7.0.0.0 and above*](https://gamebanana.com/mods/383711).
+Requires [*BepInEx v5.4.23 and above*](https://github.com/BepInEx/BepInEx/tag/v5.4.23) and [*Baldi's Basics Plus Dev API v8.0.0.0 and above*](https://gamebanana.com/mods/383711).
 
 Json.NET is bunded with the download, and is [licensed under MIT](https://github.com/JamesNK/Newtonsoft.Json?tab=MIT-1-ov-file#MIT-1-ov-file).
 

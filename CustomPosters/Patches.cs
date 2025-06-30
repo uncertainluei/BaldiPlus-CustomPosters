@@ -69,7 +69,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Patches
             _name = CoreGameManager.Instance.sceneObject.levelTitle;
 
             _type = LevelType.Schoolhouse;
-            if (builder.ld)
+            if (builder.ld != null)
                 _type = builder.ld.type;
 
             List<WeightedPosterObject> weightedPosters = new List<WeightedPosterObject>(___chalkBoards);

@@ -46,7 +46,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
         /* How common/rare it will be in comparison to other posters.
          * If set to 0, this will be set to the default desired value.
         */
-        [Range(0, float.MaxValue)]
+        [Range(0, int.MaxValue)]
         public int posterWeight = 0;
 
         /* A whitelist indicating which scene will contain the poster.

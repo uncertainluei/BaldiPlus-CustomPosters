@@ -32,7 +32,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
     public class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.uncertainluei.baldiplus.customposters";
-        public const string ModVersion = "2025.2";
+        public const string ModVersion = "2025.3";
 
         internal static ManualLogSource Log;
 
