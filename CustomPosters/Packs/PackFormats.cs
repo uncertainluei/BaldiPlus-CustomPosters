@@ -17,9 +17,9 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Packs
         public static void AddReadCheck(PluginInfo plugin, ReadCheck function)
         {
             if (plugin == null)
-                throw new NullReferenceException("'plugin' is null!");
+                throw new ArgumentNullException("plugin");
             if (function == null)
-                throw new NullReferenceException("'function' is null!");
+                throw new ArgumentNullException("function");
 
             if (!readChecks.TryGetValue(plugin, out List<ReadCheck> functions))
             {
