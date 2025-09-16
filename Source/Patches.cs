@@ -66,6 +66,10 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Patches
 
         private static bool Prefix(ChalkboardBuilderFunction __instance, ref WeightedPosterObject[] ___chalkBoards, LevelBuilder builder)
         {
+            // Skip this patch if there is only one poster (for activity chalkboards)
+            if (___chalkBoards.Length == 1)
+                return true;
+
             _name = CoreGameManager.Instance.sceneObject.levelTitle;
 
             _type = LevelType.Schoolhouse;

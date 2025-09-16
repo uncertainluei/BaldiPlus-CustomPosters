@@ -27,7 +27,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Compatibility
         internal static void Initialize()
         {
             PosterPresetStorage.chalkOverlay = BasePlugin.Chk_Overlay;
-            LoadingEvents.RegisterOnAssetsLoaded(Chainloader.PluginInfos[ModGuid], LoadFonts(), false);
+            LoadingEvents.RegisterOnAssetsLoaded(Chainloader.PluginInfos[ModGuid], LoadFonts(), LoadingEventOrder.Pre);
         }
 
         // Loads chalkboard fonts from the API on behalf of Blayms's Chalkboard Fonts mod so the fonts can be recognized by Custom Posters

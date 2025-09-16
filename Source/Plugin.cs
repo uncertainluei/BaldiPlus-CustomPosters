@@ -26,13 +26,12 @@ using UnityEngine;
 
 namespace UncertainLuei.BaldiPlus.CustomPosters
 {
-    [BepInPlugin(ModGuid, "Custom Posters", ModVersion)]
+    [BepInAutoPlugin(ModGuid, "Custom Posters")]
     [BepInDependency("mtm101.rulerp.bbplus.baldidevapi")]
     [BepInDependency("blayms.tbb.baldiplus.betterchkfont", BepInDependency.DependencyFlags.SoftDependency)]
-    public class CustomPostersPlugin : BaseUnityPlugin
+    public partial class CustomPostersPlugin : BaseUnityPlugin
     {
         public const string ModGuid = "io.github.uncertainluei.baldiplus.customposters";
-        public const string ModVersion = "2025.3";
 
         internal static ManualLogSource Log;
 
@@ -74,16 +73,16 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 ChalkFontCompat.Initialize();
 
             // Before generator management events
-            LoadingEvents.RegisterOnAssetsLoaded(Info, GrabTmpFonts(chalkCompat), false);
-            LoadingEvents.RegisterOnAssetsLoaded(Info, PosterPresetStorage.AddPresets(), false);
+            LoadingEvents.RegisterOnAssetsLoaded(Info, GrabTmpFonts(chalkCompat), LoadingEventOrder.Pre);
+            LoadingEvents.RegisterOnAssetsLoaded(Info, PosterPresetStorage.AddPresets(), LoadingEventOrder.Pre);
 
             if (CustomPostersConfig.extendRoomEnums.Value)
             {
-                LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterEnumExts(), false);
-                LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterExtendedRooms(), true);
+                LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterEnumExts(), LoadingEventOrder.Pre);
+                LoadingEvents.RegisterOnAssetsLoaded(Info, CustomPostersEnumExts.RegisterExtendedRooms(), LoadingEventOrder.Final);
             }
             
-            LoadingEvents.RegisterOnAssetsLoaded(Info, LoadPosterPacks(true), false);
+            LoadingEvents.RegisterOnAssetsLoaded(Info, LoadPosterPacks(true), LoadingEventOrder.Pre);
 
             GeneratorManagement.Register(this, GenerationModType.Addend, OnGeneratorAddend);
             GeneratorManagement.Register(this, GenerationModType.Finalizer, OnGeneratorFinalizer);
