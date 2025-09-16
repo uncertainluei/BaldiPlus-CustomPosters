@@ -36,10 +36,10 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
         internal static ManualLogSource Log;
 
         // POSTER VARIABLES
-        private static readonly List<PosterPackBlueprint> posterPackBlueprints = new List<PosterPackBlueprint>();
+        private static readonly List<PosterPackBlueprint> posterPackBlueprints = [];
 
-        internal static Dictionary<string, PosterPack> posterPacks = new Dictionary<string, PosterPack>();
-        internal static List<PosterPack> activePosterPacks = new List<PosterPack>();
+        internal static Dictionary<string, PosterPack> posterPacks = [];
+        internal static List<PosterPack> activePosterPacks = [];
 
         private string currentFloorName;
         private int currentFloorId;
@@ -105,8 +105,14 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
                 yield return null;
             }
 
+            foreach (CustomLevelObject level in Resources.FindObjectsOfTypeAll<CustomLevelObject>())
+            {
+                if (level.markedModifieds.ContainsKey(Info.Metadata.GUID))
+                    level.markedModifieds.Remove(Info.Metadata.GUID);
+            }
+
             // Force-updates all SceneObjects
-            foreach (SceneObject scene in Resources.FindObjectsOfTypeAll<SceneObject>().Where(x => x.levelObject != null))
+            foreach (SceneObject scene in Resources.FindObjectsOfTypeAll<SceneObject>().Where(x => x.GetCustomLevelObjects().Length > 0))
             {
                 OnGeneratorAddend(scene.levelTitle, scene.levelNo, scene);
                 OnGeneratorFinalizer(scene.levelTitle, scene.levelNo, scene);
@@ -230,12 +236,16 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             currentFloorId = id;
             currentFloorFinalized = false;
 
-            foreach (LevelObject lvl in scene.GetCustomLevelObjects())
+            foreach (CustomLevelObject lvl in scene.GetCustomLevelObjects())
                 OnGeneratorAddendLvl(name, lvl);
         }
 
-        private void OnGeneratorAddendLvl(string name, LevelObject lvl)
+        private void OnGeneratorAddendLvl(string name, CustomLevelObject lvl)
         {
+            if (lvl.IsModifiedByMod(Info, GenerationStageFlags.Addend))
+                return;
+            lvl.MarkAsModifiedByMod(Info, GenerationStageFlags.Addend);
+
             // If there aren't any posters in the level, don't add them
             if (lvl.posters.Length > 0)
             {
@@ -266,15 +276,19 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             if (CustomPostersConfig.logGeneratorPosters.Value)
                 Logger.LogInfo($"SceneObject \"{name}\", ID {id}");
 
-            foreach (LevelObject lvl in scene.GetCustomLevelObjects())
+            foreach (CustomLevelObject lvl in scene.GetCustomLevelObjects())
                 OnGeneratorFinalizerLvl(lvl);
 
             if (CustomPostersConfig.logGeneratorPosters.Value)
                 Logger.LogInfo("");
         }
 
-        private void OnGeneratorFinalizerLvl(LevelObject lvl)
+        private void OnGeneratorFinalizerLvl(CustomLevelObject lvl)
         {
+            if (lvl.IsModifiedByMod(Info, GenerationStageFlags.Finalizer))
+                return;
+            lvl.MarkAsModifiedByMod(Info, GenerationStageFlags.Finalizer);
+
             // Remove blacklisted posters from the generator
             List<WeightedPosterObject> currentPosters = new List<WeightedPosterObject>(lvl.posters);
             currentPosters.RemoveAll(x => x.selection == null || x.IsBlacklisted());
@@ -358,10 +372,10 @@ namespace UncertainLuei.BaldiPlus.CustomPosters
             int idx, arrayLength;
             string posterPath;
             Texture2D tex;
-            List<PosterTextSettings> customTextData = new List<PosterTextSettings>();
+            List<PosterTextSettings> customTextData = [];
 
             List<PosterObject> posters = Resources.FindObjectsOfTypeAll<PosterObject>().Where(x => x.GetInstanceID() > 0).ToList();
-            List<PosterObject> postersToIgnore = new List<PosterObject>();
+            List<PosterObject> postersToIgnore = [];
             posters.Do(x =>
             {
                 if (x.multiPosterArray != null && x.multiPosterArray.Length > 1)

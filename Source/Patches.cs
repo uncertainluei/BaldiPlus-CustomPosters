@@ -18,7 +18,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Patches
         */
         static bool Prefix(PosterObject poster)
         {
-            if (!(poster is CustomPosterObject ext)) return true;
+            if (poster is not CustomPosterObject ext) return true;
             if (ext.overlayData?.Length > 0) return true;
             return false;
         }
