@@ -25,7 +25,7 @@ namespace UncertainLuei.BaldiPlus.CustomPosters.Patches
     }
 
     [HarmonyPatch(typeof(TextTextureGenerator))]
-    [HarmonyPatch("GenerateTextTexture")]
+    [HarmonyPatch("GenerateTextTexture", [typeof(PosterObject), typeof(bool)])]
     public class TextTexturePatch
     {
         static void Postfix(Texture2D __result, PosterObject poster)
